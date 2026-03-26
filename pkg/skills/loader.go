@@ -18,7 +18,7 @@ import (
 	"github.com/sipeed/picoclaw/pkg/logger"
 )
 
-var namePattern = regexp.MustCompile(`^[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*$`)
+var namePattern = regexp.MustCompile(`^[\p{L}0-9]+(-[\p{L}0-9]+)*$`)
 
 const (
 	MaxNameLength        = 64

@@ -28,6 +28,7 @@ type skillDetailResponse struct {
 
 var (
 	skillNameSanitizer       = regexp.MustCompile(`[^a-z0-9-]+`)
+	unicodeSanitizer         = regexp.MustCompile(`[^\p{L}0-9-]+`) // Support Unicode letters (including Chinese)
 	importedSkillFrontmatter = regexp.MustCompile(`(?s)^---(?:\r\n|\n|\r)(.*?)(?:\r\n|\n|\r)---(?:\r\n|\n|\r)*`)
 	skillFrontmatterStripper = regexp.MustCompile(`(?s)^---(?:\r\n|\n|\r)(.*?)(?:\r\n|\n|\r)---(?:\r\n|\n|\r)*`)
 )
@@ -209,7 +210,7 @@ func normalizeImportedSkillName(filename string, content []byte) (string, error)
 	raw = strings.ToLower(raw)
 	raw = strings.ReplaceAll(raw, "_", "-")
 	raw = strings.ReplaceAll(raw, " ", "-")
-	raw = skillNameSanitizer.ReplaceAllString(raw, "-")
+	raw = unicodeSanitizer.ReplaceAllString(raw, "-")
 	raw = strings.Trim(raw, "-")
 	raw = strings.Join(strings.FieldsFunc(raw, func(r rune) bool { return r == '-' }), "-")
 
@@ -219,7 +220,7 @@ func normalizeImportedSkillName(filename string, content []byte) (string, error)
 	if len(raw) > 64 {
 		return "", fmt.Errorf("skill name exceeds 64 characters")
 	}
-	matched, err := regexp.MatchString(`^[a-z0-9]+(-[a-z0-9]+)*$`, raw)
+	matched, err := regexp.MatchString(`^[\p{L}0-9]+(-[\p{L}0-9]+)*$`, raw)
 	if err != nil || !matched {
 		return "", fmt.Errorf("skill name must be alphanumeric with hyphens")
 	}

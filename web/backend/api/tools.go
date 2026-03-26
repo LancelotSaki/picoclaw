@@ -148,6 +148,18 @@ var toolCatalog = []toolCatalogEntry{
 		Category:    "discovery",
 		ConfigKey:   "mcp.discovery.use_bm25",
 	},
+	{
+		Name:        "http",
+		Description: "Execute HTTP requests to query business data from various APIs.",
+		Category:    "integration",
+		ConfigKey:   "http",
+	},
+	{
+		Name:        "database",
+		Description: "Execute SQL queries to interact with connected databases.",
+		Category:    "integration",
+		ConfigKey:   "database",
+	},
 }
 
 func (h *Handler) registerToolRoutes(mux *http.ServeMux) {
@@ -328,6 +340,10 @@ func applyToolState(cfg *config.Config, toolName string, enabled bool) error {
 			cfg.Tools.MCP.Enabled = true
 			cfg.Tools.MCP.Discovery.Enabled = true
 		}
+	case "database":
+		cfg.Tools.Database.Enabled = enabled
+	case "http":
+		cfg.Tools.HTTP.Enabled = enabled
 	default:
 		return fmt.Errorf("tool %q cannot be updated", toolName)
 	}
