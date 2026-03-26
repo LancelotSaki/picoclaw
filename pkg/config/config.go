@@ -1147,6 +1147,8 @@ type ToolsConfig struct {
 	FilterMinLength int                `json:"filter_min_length" env:"PICOCLAW_TOOLS_FILTER_MIN_LENGTH"`
 	Web             WebToolsConfig     `json:"web"`
 	Cron            CronToolsConfig    `json:"cron"`
+	Database        ToolConfig         `json:"database"                                                 envPrefix:"PICOCLAW_TOOLS_DATABASE_"`
+	HTTP            ToolConfig         `json:"http"                                                     envPrefix:"PICOCLAW_TOOLS_HTTP_"`
 	Exec            ExecConfig         `json:"exec"`
 	Skills          SkillsToolsConfig  `json:"skills"`
 	MediaCleanup    MediaCleanupConfig `json:"media_cleanup"`
@@ -2130,6 +2132,10 @@ func (t *ToolsConfig) IsToolEnabled(name string) bool {
 		return t.Web.Enabled
 	case "cron":
 		return t.Cron.Enabled
+	case "database":
+		return t.Database.Enabled
+	case "http":
+		return t.HTTP.Enabled	
 	case "exec":
 		return t.Exec.Enabled
 	case "skills":

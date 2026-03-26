@@ -92,6 +92,14 @@ func NewAgentInstance(
 		}
 	}
 
+    if cfg.Tools.IsToolEnabled("database") {
+		toolsRegistry.Register(tools.NewDatabaseTool())
+	}
+
+	if cfg.Tools.IsToolEnabled("http") {
+		toolsRegistry.Register(tools.NewHTTPTool())
+	}
+
 	if cfg.Tools.IsToolEnabled("edit_file") {
 		toolsRegistry.Register(tools.NewEditFileTool(workspace, restrict, allowWritePaths))
 	}

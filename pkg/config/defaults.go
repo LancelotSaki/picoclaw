@@ -417,6 +417,12 @@ func DefaultConfig() *Config {
 				ExecTimeoutMinutes: 5,
 				AllowCommand:       true,
 			},
+			Database: ToolConfig{
+				Enabled: false,
+			},
+			HTTP: ToolConfig{
+                Enabled: true,
+            },
 			Exec: ExecConfig{
 				ToolConfig: ToolConfig{
 					Enabled: true,

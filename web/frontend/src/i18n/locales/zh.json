@@ -418,7 +418,8 @@
           "skills": "技能",
           "agents": "Agent",
           "hardware": "硬件",
-          "discovery": "发现"
+          "discovery": "发现",
+          "integration": "集成"
         },
         "reasons": {
           "requires_linux": "该工具仅在 Linux 主机上可用，并且需要暴露对应的设备文件。",

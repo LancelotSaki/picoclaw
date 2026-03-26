@@ -418,7 +418,8 @@
           "skills": "Skills",
           "agents": "Agents",
           "hardware": "Hardware",
-          "discovery": "Discovery"
+          "discovery": "Discovery",
+          "integration": "Integration"
         },
         "reasons": {
           "requires_linux": "This tool only works on Linux hosts with the required device files exposed.",
