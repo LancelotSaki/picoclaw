@@ -2,7 +2,6 @@ package matrix
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"html"
 	"io"
@@ -18,9 +17,7 @@ import (
 	"github.com/gomarkdown/markdown"
 	mdhtml "github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
-	"go.mau.fi/util/dbutil"
 	"maunium.net/go/mautrix"
-	"maunium.net/go/mautrix/crypto/cryptohelper"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 	_ "modernc.org/sqlite"
@@ -188,15 +185,11 @@ type MatrixChannel struct {
 
 	roomKindCache     *roomKindCache
 	localpartMentionR *regexp.Regexp
-
-	cryptoHelper *cryptohelper.CryptoHelper
-	cryptoDbPath string
 }
 
 func NewMatrixChannel(
 	cfg config.MatrixConfig,
 	messageBus *bus.MessageBus,
-	cryptoDatabasePath string,
 ) (*MatrixChannel, error) {
 	homeserver := strings.TrimSpace(cfg.Homeserver)
 	userID := strings.TrimSpace(cfg.UserID)
@@ -244,7 +237,6 @@ func NewMatrixChannel(
 		roomKindCache:     newRoomKindCache(roomKindCacheMaxEntries, roomKindCacheTTL),
 		localpartMentionR: localpartMentionRegexp(matrixLocalpart(client.UserID)),
 		typingMu:          sync.Mutex{},
-		cryptoDbPath:      cryptoDatabasePath,
 	}, nil
 }
 
@@ -254,21 +246,7 @@ func (c *MatrixChannel) Start(ctx context.Context) error {
 	c.ctx, c.cancel = context.WithCancel(ctx)
 	c.startTime = time.Now()
 
-	// Initialize crypto helper if database and passphrase are configured
-	if c.cryptoDbPath != "" && c.config.CryptoPassphrase != "" {
-		if err := c.initCrypto(ctx); err != nil {
-			logger.WarnCF(
-				"matrix",
-				"Failed to initialize crypto, continuing without encryption support",
-				map[string]any{
-					"error": err.Error(),
-				},
-			)
-		}
-	}
-
 	c.syncer.OnEventType(event.EventMessage, c.handleMessageEvent)
-	c.syncer.OnEventType(event.EventEncrypted, c.handleMessageEvent)
 	c.syncer.OnEventType(event.StateMember, c.handleMemberEvent)
 
 	c.SetRunning(true)
@@ -295,81 +273,7 @@ func (c *MatrixChannel) Stop(ctx context.Context) error {
 	}
 	c.stopTypingSessions(ctx)
 
-	// Close crypto helper if initialized
-	if c.cryptoHelper != nil {
-		c.cryptoHelper.Close()
-		c.cryptoHelper = nil
-		c.client.Crypto = nil
-	}
-
 	logger.InfoC("matrix", "Matrix channel stopped")
-	return nil
-}
-
-func (c *MatrixChannel) initCrypto(ctx context.Context) error {
-	logger.InfoC("matrix", "Initializing crypto helper")
-
-	// Ensure the crypto database directory exists
-	if err := os.MkdirAll(c.cryptoDbPath, 0o700); err != nil {
-		return fmt.Errorf("create crypto database directory: %w", err)
-	}
-
-	// Create database with sqlite driver (modernc.org/sqlite)
-	dbPath := filepath.Join(c.cryptoDbPath, dbName)
-	connStr := "file:" + dbPath + "?_foreign_keys=on"
-
-	db, err := sql.Open(sqliteDriver, connStr)
-	if err != nil {
-		return fmt.Errorf("open crypto database: %w", err)
-	}
-	db.SetMaxOpenConns(1)
-	db.SetMaxIdleConns(1)
-
-	// Execute PRAGMA statements
-	// This is equivalent to the "sqlite3-fk-wal" dialect used by cryptohelper
-	pragmaStmts := []string{
-		"PRAGMA foreign_keys = ON",
-		"PRAGMA journal_mode = WAL",
-		"PRAGMA synchronous = NORMAL",
-		"PRAGMA busy_timeout = 5000",
-	}
-	for _, pragma := range pragmaStmts {
-		if _, err = db.ExecContext(ctx, pragma); err != nil {
-			_ = db.Close()
-			return fmt.Errorf("execute %s: %w", pragma, err)
-		}
-	}
-
-	// Wrap with dbutil for dialect support
-	wrappedDB, err := dbutil.NewWithDB(db, sqliteDriver)
-	if err != nil {
-		_ = db.Close()
-		return fmt.Errorf("wrap database: %w", err)
-	}
-
-	cryptoHelper, err := cryptohelper.NewCryptoHelper(c.client, []byte(c.config.CryptoPassphrase), wrappedDB)
-	if err != nil {
-		return fmt.Errorf("create crypto helper: %w", err)
-	}
-
-	if c.client.DeviceID == "" {
-		resp, whoamiErr := c.client.Whoami(ctx)
-		if whoamiErr != nil {
-			_ = db.Close()
-			return fmt.Errorf("get device ID via whoami: %w", whoamiErr)
-		}
-		c.client.DeviceID = resp.DeviceID
-	}
-
-	if err = cryptoHelper.Init(ctx); err != nil {
-		cryptoHelper.Close()
-		return fmt.Errorf("init crypto helper: %w", err)
-	}
-
-	c.client.Crypto = cryptoHelper
-	c.cryptoHelper = cryptoHelper
-
-	logger.InfoC("matrix", "Crypto helper initialized successfully")
 	return nil
 }
 
@@ -651,23 +555,13 @@ func (c *MatrixChannel) handleMessageEvent(ctx context.Context, evt *event.Event
 	var msgEvt *event.MessageEventContent
 	switch evt.Type {
 	case event.EventMessage:
-		// When crypto is enabled, events marked WasEncrypted=true are
-		// re-dispatched by c.cryptoHelper after decryption and will be
-		// processed again in the EventEncrypted branch. Skip to avoid duplication.
-		if c.client.Crypto != nil && evt.Mautrix.WasEncrypted {
-			return
-		}
-
 		msgEvt = evt.Content.AsMessage()
 		if msgEvt == nil || msgEvt.MsgType == "" {
 			return
 		}
-	case event.EventEncrypted:
-		var ok bool
-		msgEvt, ok = c.decryptEvent(ctx, evt)
-		if !ok {
-			return
-		}
+	default:
+		// Ignore non-message events (e.g., encrypted messages without crypto enabled)
+		return
 	}
 
 	// Ignore edits.
@@ -757,36 +651,6 @@ func (c *MatrixChannel) handleMessageEvent(ctx context.Context, evt *event.Event
 		metadata,
 		sender,
 	)
-}
-
-// decryptEvent decrypts an encrypted event and returns the decrypted message event content.
-// It returns the decrypted content and a boolean indicating whether decryption was successful.
-func (c *MatrixChannel) decryptEvent(ctx context.Context, evt *event.Event) (*event.MessageEventContent, bool) {
-	if c.client.Crypto == nil {
-		logger.DebugCF("matrix", "Received encrypted message but crypto is not enabled", map[string]any{
-			"room_id": evt.RoomID.String(),
-		})
-		return nil, false
-	}
-
-	decrypted, err := c.client.Crypto.Decrypt(ctx, evt)
-	if err != nil {
-		logger.WarnCF("matrix", "Failed to decrypt message", map[string]any{
-			"room_id": evt.RoomID.String(),
-			"error":   err.Error(),
-		})
-		return nil, false
-	}
-
-	if decrypted.Type != event.EventMessage {
-		logger.DebugCF("matrix", "Decrypted event is not a message event", map[string]any{
-			"room_id": evt.RoomID.String(),
-			"type":    decrypted.Type.String(),
-		})
-		return nil, false
-	}
-
-	return decrypted.Content.AsMessage(), true
 }
 
 func (c *MatrixChannel) extractInboundContent(
