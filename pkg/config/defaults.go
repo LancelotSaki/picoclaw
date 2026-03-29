@@ -65,7 +65,11 @@ func DefaultConfig() *Config {
 					Enabled: true,
 					Text:    FlexibleStringSlice{"Thinking... 💭"},
 				},
-				Streaming:     StreamingConfig{Enabled: true, ThrottleSeconds: 3, MinGrowthChars: 200},
+				Streaming: StreamingConfig{
+					Enabled:         true,
+					ThrottleSeconds: 3,
+					MinGrowthChars:  200,
+				},
 				UseMarkdownV2: false,
 			},
 			Feishu: FeishuConfig{

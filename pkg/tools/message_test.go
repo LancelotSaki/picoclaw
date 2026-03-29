@@ -43,7 +43,10 @@ func TestMessageTool_Execute_Success(t *testing.T) {
 
 	// - ForLLM contains send status description
 	if result.ForLLM != "Message sent to test-channel:test-chat-id" {
-		t.Errorf("Expected ForLLM 'Message sent to test-channel:test-chat-id', got '%s'", result.ForLLM)
+		t.Errorf(
+			"Expected ForLLM 'Message sent to test-channel:test-chat-id', got '%s'",
+			result.ForLLM,
+		)
 	}
 
 	// - ForUser is empty (user already received message directly)
@@ -88,7 +91,10 @@ func TestMessageTool_Execute_WithCustomChannel(t *testing.T) {
 		t.Error("Expected Silent=true")
 	}
 	if result.ForLLM != "Message sent to custom-channel:custom-chat-id" {
-		t.Errorf("Expected ForLLM 'Message sent to custom-channel:custom-chat-id', got '%s'", result.ForLLM)
+		t.Errorf(
+			"Expected ForLLM 'Message sent to custom-channel:custom-chat-id', got '%s'",
+			result.ForLLM,
+		)
 	}
 }
 

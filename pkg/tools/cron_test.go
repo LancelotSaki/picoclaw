@@ -49,7 +49,11 @@ func (s *stubJobExecutor) PublishResponseIfNeeded(
 	s.publishedChatID = chatID
 }
 
-func newTestCronToolWithExecutorAndConfig(t *testing.T, executor JobExecutor, cfg *config.Config) *CronTool {
+func newTestCronToolWithExecutorAndConfig(
+	t *testing.T,
+	executor JobExecutor,
+	cfg *config.Config,
+) *CronTool {
 	t.Helper()
 	storePath := filepath.Join(t.TempDir(), "cron.json")
 	cronService := cron.NewCronService(storePath, nil)
@@ -102,7 +106,10 @@ func TestCronTool_CommandDoesNotRequireConfirmByDefault(t *testing.T) {
 	})
 
 	if result.IsError {
-		t.Fatalf("expected command scheduling without confirm to succeed by default, got: %s", result.ForLLM)
+		t.Fatalf(
+			"expected command scheduling without confirm to succeed by default, got: %s",
+			result.ForLLM,
+		)
 	}
 	if !strings.Contains(result.ForLLM, "Cron job added") {
 		t.Errorf("expected 'Cron job added', got: %s", result.ForLLM)
@@ -190,7 +197,10 @@ func TestCronTool_CommandAllowedFromInternalChannel(t *testing.T) {
 	})
 
 	if result.IsError {
-		t.Fatalf("expected command scheduling to succeed from internal channel, got: %s", result.ForLLM)
+		t.Fatalf(
+			"expected command scheduling to succeed from internal channel, got: %s",
+			result.ForLLM,
+		)
 	}
 	if !strings.Contains(result.ForLLM, "Cron job added") {
 		t.Errorf("expected 'Cron job added', got: %s", result.ForLLM)
@@ -225,7 +235,10 @@ func TestCronTool_NonCommandJobAllowedFromRemoteChannel(t *testing.T) {
 	})
 
 	if result.IsError {
-		t.Fatalf("expected non-command reminder to succeed from remote channel, got: %s", result.ForLLM)
+		t.Fatalf(
+			"expected non-command reminder to succeed from remote channel, got: %s",
+			result.ForLLM,
+		)
 	}
 }
 
@@ -297,7 +310,11 @@ func TestCronTool_ExecuteJobPublishesAgentResponse(t *testing.T) {
 		t.Fatalf("sessionKey = %q, want cron-job-1", executor.lastKey)
 	}
 	if executor.lastChan != "telegram" || executor.lastChatID != "chat-1" {
-		t.Fatalf("executor target = %s/%s, want telegram/chat-1", executor.lastChan, executor.lastChatID)
+		t.Fatalf(
+			"executor target = %s/%s, want telegram/chat-1",
+			executor.lastChan,
+			executor.lastChatID,
+		)
 	}
 	if executor.lastPrompt != "send me a poem" {
 		t.Fatalf("prompt = %q, want original message", executor.lastPrompt)
@@ -306,7 +323,11 @@ func TestCronTool_ExecuteJobPublishesAgentResponse(t *testing.T) {
 		t.Fatalf("published response = %q, want generated reply", executor.publishedResp)
 	}
 	if executor.publishedChan != "telegram" || executor.publishedChatID != "chat-1" {
-		t.Fatalf("published target = %s/%s, want telegram/chat-1", executor.publishedChan, executor.publishedChatID)
+		t.Fatalf(
+			"published target = %s/%s, want telegram/chat-1",
+			executor.publishedChan,
+			executor.publishedChatID,
+		)
 	}
 }
 
@@ -342,7 +363,10 @@ func TestCronTool_ExecuteJobSkipsWhenMessageToolAlreadySent(t *testing.T) {
 	}
 
 	if executor.publishedResp != "" {
-		t.Fatalf("expected no published response when message tool already sent, got: %q", executor.publishedResp)
+		t.Fatalf(
+			"expected no published response when message tool already sent, got: %q",
+			executor.publishedResp,
+		)
 	}
 }
 
@@ -386,7 +410,9 @@ func TestCronTool_ExecuteJobDirectiveWithDeliverRoutesToAgent(t *testing.T) {
 	}
 
 	if executor.lastPrompt == "" {
-		t.Fatal("expected agent to be called for directive+deliver, but ProcessDirectWithChannel was not invoked")
+		t.Fatal(
+			"expected agent to be called for directive+deliver, but ProcessDirectWithChannel was not invoked",
+		)
 	}
 	if executor.publishedResp != "agent processed" {
 		t.Fatalf("published response = %q, want %q", executor.publishedResp, "agent processed")

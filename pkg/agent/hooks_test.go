@@ -293,7 +293,10 @@ func TestAgentLoop_Hooks_ToolInterceptorCanRewrite(t *testing.T) {
 
 type denyApprovalHook struct{}
 
-func (h *denyApprovalHook) ApproveTool(ctx context.Context, req *ToolApprovalRequest) (ApprovalDecision, error) {
+func (h *denyApprovalHook) ApproveTool(
+	ctx context.Context,
+	req *ToolApprovalRequest,
+) (ApprovalDecision, error) {
 	return ApprovalDecision{
 		Approved: false,
 		Reason:   "blocked",

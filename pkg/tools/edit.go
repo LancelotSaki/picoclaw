@@ -16,7 +16,11 @@ type EditFileTool struct {
 }
 
 // NewEditFileTool creates a new EditFileTool with optional directory restriction.
-func NewEditFileTool(workspace string, restrict bool, allowPaths ...[]*regexp.Regexp) *EditFileTool {
+func NewEditFileTool(
+	workspace string,
+	restrict bool,
+	allowPaths ...[]*regexp.Regexp,
+) *EditFileTool {
 	var patterns []*regexp.Regexp
 	if len(allowPaths) > 0 {
 		patterns = allowPaths[0]
@@ -79,7 +83,11 @@ type AppendFileTool struct {
 	fs fileSystem
 }
 
-func NewAppendFileTool(workspace string, restrict bool, allowPaths ...[]*regexp.Regexp) *AppendFileTool {
+func NewAppendFileTool(
+	workspace string,
+	restrict bool,
+	allowPaths ...[]*regexp.Regexp,
+) *AppendFileTool {
 	var patterns []*regexp.Regexp
 	if len(allowPaths) > 0 {
 		patterns = allowPaths[0]
@@ -166,7 +174,10 @@ func replaceEditContent(content []byte, oldText, newText string) ([]byte, error)
 
 	count := strings.Count(contentStr, oldText)
 	if count > 1 {
-		return nil, fmt.Errorf("old_text appears %d times. Please provide more context to make it unique", count)
+		return nil, fmt.Errorf(
+			"old_text appears %d times. Please provide more context to make it unique",
+			count,
+		)
 	}
 
 	newContent := strings.Replace(contentStr, oldText, newText, 1)

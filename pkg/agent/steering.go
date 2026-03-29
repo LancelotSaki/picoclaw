@@ -325,7 +325,10 @@ func (al *AgentLoop) agentForSession(sessionKey string) *AgentInstance {
 // user has since enqueued steering messages.
 //
 // If no steering messages are pending, it returns an empty string.
-func (al *AgentLoop) Continue(ctx context.Context, sessionKey, channel, chatID string) (string, error) {
+func (al *AgentLoop) Continue(
+	ctx context.Context,
+	sessionKey, channel, chatID string,
+) (string, error) {
 	if active := al.GetActiveTurn(); active != nil {
 		return "", fmt.Errorf("turn %s is still active", active.TurnID)
 	}

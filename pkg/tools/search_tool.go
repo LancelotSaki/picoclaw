@@ -56,19 +56,38 @@ func (t *RegexSearchTool) Execute(ctx context.Context, args map[string]any) *Too
 	}
 
 	if len(pattern) > MaxRegexPatternLength {
-		logger.WarnCF("discovery", "Regex pattern rejected (too long)", map[string]any{"len": len(pattern)})
-		return ErrorResult(fmt.Sprintf("Pattern too long: max %d characters allowed", MaxRegexPatternLength))
+		logger.WarnCF(
+			"discovery",
+			"Regex pattern rejected (too long)",
+			map[string]any{"len": len(pattern)},
+		)
+		return ErrorResult(
+			fmt.Sprintf("Pattern too long: max %d characters allowed", MaxRegexPatternLength),
+		)
 	}
 
 	logger.DebugCF("discovery", "Regex search", map[string]any{"pattern": pattern})
 
 	res, err := t.registry.SearchRegex(pattern, t.maxSearchResults)
 	if err != nil {
-		logger.WarnCF("discovery", "Invalid regex pattern", map[string]any{"pattern": pattern, "error": err.Error()})
-		return ErrorResult(fmt.Sprintf("Invalid regex pattern syntax: %v. Please fix your regex and try again.", err))
+		logger.WarnCF(
+			"discovery",
+			"Invalid regex pattern",
+			map[string]any{"pattern": pattern, "error": err.Error()},
+		)
+		return ErrorResult(
+			fmt.Sprintf(
+				"Invalid regex pattern syntax: %v. Please fix your regex and try again.",
+				err,
+			),
+		)
 	}
 
-	logger.InfoCF("discovery", "Regex search completed", map[string]any{"pattern": pattern, "results": len(res)})
+	logger.InfoCF(
+		"discovery",
+		"Regex search completed",
+		map[string]any{"pattern": pattern, "results": len(res)},
+	)
 	return formatDiscoveryResponse(t.registry, res, t.ttl)
 }
 
@@ -138,7 +157,11 @@ func (t *BM25SearchTool) Execute(ctx context.Context, args map[string]any) *Tool
 		}
 	}
 
-	logger.InfoCF("discovery", "BM25 search completed", map[string]any{"query": query, "results": len(results)})
+	logger.InfoCF(
+		"discovery",
+		"BM25 search completed",
+		map[string]any{"query": query, "results": len(results)},
+	)
 	return formatDiscoveryResponse(t.registry, results, t.ttl)
 }
 
@@ -150,7 +173,10 @@ type ToolSearchResult struct {
 	Description string `json:"description"`
 }
 
-func (r *ToolRegistry) SearchRegex(pattern string, maxSearchResults int) ([]ToolSearchResult, error) {
+func (r *ToolRegistry) SearchRegex(
+	pattern string,
+	maxSearchResults int,
+) ([]ToolSearchResult, error) {
 	if maxSearchResults <= 0 {
 		return nil, nil
 	}
@@ -188,7 +214,11 @@ func (r *ToolRegistry) SearchRegex(pattern string, maxSearchResults int) ([]Tool
 	return results, nil
 }
 
-func formatDiscoveryResponse(registry *ToolRegistry, results []ToolSearchResult, ttl int) *ToolResult {
+func formatDiscoveryResponse(
+	registry *ToolRegistry,
+	results []ToolSearchResult,
+	ttl int,
+) *ToolResult {
 	if len(results) == 0 {
 		return SilentResult("No tools found matching the query.")
 	}
@@ -274,7 +304,11 @@ func (t *BM25SearchTool) getOrBuildEngine() *bm25CachedEngine {
 	cached := &bm25CachedEngine{engine: buildBM25Engine(docs)}
 	t.cachedEngine = cached
 	t.cacheVersion = snap.Version
-	logger.DebugCF("discovery", "BM25 engine rebuilt", map[string]any{"docs": len(docs), "version": snap.Version})
+	logger.DebugCF(
+		"discovery",
+		"BM25 engine rebuilt",
+		map[string]any{"docs": len(docs), "version": snap.Version},
+	)
 	return cached
 }
 

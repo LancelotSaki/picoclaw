@@ -142,7 +142,11 @@ func TestToolResultJSONSerialization(t *testing.T) {
 				t.Errorf("ForLLM mismatch: got '%s', want '%s'", decoded.ForLLM, tt.result.ForLLM)
 			}
 			if decoded.ForUser != tt.result.ForUser {
-				t.Errorf("ForUser mismatch: got '%s', want '%s'", decoded.ForUser, tt.result.ForUser)
+				t.Errorf(
+					"ForUser mismatch: got '%s', want '%s'",
+					decoded.ForUser,
+					tt.result.ForUser,
+				)
 			}
 			if decoded.Silent != tt.result.Silent {
 				t.Errorf("Silent mismatch: got %v, want %v", decoded.Silent, tt.result.Silent)

@@ -72,7 +72,11 @@ func TestMigration_Integration_LegacyConfigWithoutWorkspace(t *testing.T) {
 	// CRITICAL: Verify that user's settings are preserved
 	// This was the bug - these settings were lost when Workspace was empty
 	if cfg.Agents.Defaults.Provider != "openai" {
-		t.Errorf("Provider = %q, want %q (user's setting should be preserved)", cfg.Agents.Defaults.Provider, "openai")
+		t.Errorf(
+			"Provider = %q, want %q (user's setting should be preserved)",
+			cfg.Agents.Defaults.Provider,
+			"openai",
+		)
 	}
 	// Old "model" field is migrated to "model_name" field
 	if cfg.Agents.Defaults.ModelName != "gpt-4o" {
@@ -299,7 +303,11 @@ func TestMigration_Integration_PreservesAllAgentsFields(t *testing.T) {
 		t.Errorf("Agent.ID = %q, want %q", cfg.Agents.List[0].ID, "special-agent")
 	}
 	if cfg.Agents.List[0].Workspace != "/special/workspace" {
-		t.Errorf("Agent.Workspace = %q, want %q", cfg.Agents.List[0].Workspace, "/special/workspace")
+		t.Errorf(
+			"Agent.Workspace = %q, want %q",
+			cfg.Agents.List[0].Workspace,
+			"/special/workspace",
+		)
 	}
 
 	// Workspace should have default since it was empty in legacy config
@@ -362,7 +370,10 @@ func TestMigration_Integration_ChannelsConfigMigrated(t *testing.T) {
 
 	// OneBot: group_trigger_prefix should be migrated to group_trigger.prefixes
 	if len(cfg.Channels.OneBot.GroupTrigger.Prefixes) != 2 {
-		t.Errorf("len(OneBot.GroupTrigger.Prefixes) = %d, want 2", len(cfg.Channels.OneBot.GroupTrigger.Prefixes))
+		t.Errorf(
+			"len(OneBot.GroupTrigger.Prefixes) = %d, want 2",
+			len(cfg.Channels.OneBot.GroupTrigger.Prefixes),
+		)
 	} else {
 		if cfg.Channels.OneBot.GroupTrigger.Prefixes[0] != "/" {
 			t.Errorf("Prefixes[0] = %q, want %q", cfg.Channels.OneBot.GroupTrigger.Prefixes[0], "/")
@@ -443,13 +454,25 @@ func TestMigration_Integration_RoundTrip_SerializeAndLoad(t *testing.T) {
 
 	// Verify configs are identical
 	if cfg2.Agents.Defaults.Provider != cfg1.Agents.Defaults.Provider {
-		t.Errorf("Provider changed from %q to %q", cfg1.Agents.Defaults.Provider, cfg2.Agents.Defaults.Provider)
+		t.Errorf(
+			"Provider changed from %q to %q",
+			cfg1.Agents.Defaults.Provider,
+			cfg2.Agents.Defaults.Provider,
+		)
 	}
 	if cfg2.Agents.Defaults.ModelName != cfg1.Agents.Defaults.ModelName {
-		t.Errorf("ModelName changed from %q to %q", cfg1.Agents.Defaults.ModelName, cfg2.Agents.Defaults.ModelName)
+		t.Errorf(
+			"ModelName changed from %q to %q",
+			cfg1.Agents.Defaults.ModelName,
+			cfg2.Agents.Defaults.ModelName,
+		)
 	}
 	if cfg2.Agents.Defaults.MaxTokens != cfg1.Agents.Defaults.MaxTokens {
-		t.Errorf("MaxTokens changed from %d to %d", cfg1.Agents.Defaults.MaxTokens, cfg2.Agents.Defaults.MaxTokens)
+		t.Errorf(
+			"MaxTokens changed from %d to %d",
+			cfg1.Agents.Defaults.MaxTokens,
+			cfg2.Agents.Defaults.MaxTokens,
+		)
 	}
 }
 
@@ -557,7 +580,11 @@ func TestMigration_Integration_ModelNameField(t *testing.T) {
 
 	// GetModelName() should return model_name, not model (deprecated)
 	if cfg.Agents.Defaults.GetModelName() != "deepseek-reasoner" {
-		t.Errorf("GetModelName() = %q, want %q", cfg.Agents.Defaults.GetModelName(), "deepseek-reasoner")
+		t.Errorf(
+			"GetModelName() = %q, want %q",
+			cfg.Agents.Defaults.GetModelName(),
+			"deepseek-reasoner",
+		)
 	}
 
 	if len(cfg.Agents.Defaults.ModelFallbacks) != 1 {

@@ -55,7 +55,12 @@ func smbusProbe(fd int, addr int, hasQuick bool) bool {
 			size:      i2cSmbusQuick,
 			data:      nil,
 		}
-		_, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(fd), i2cSmbus, uintptr(unsafe.Pointer(&args)))
+		_, _, errno := syscall.Syscall(
+			syscall.SYS_IOCTL,
+			uintptr(fd),
+			i2cSmbus,
+			uintptr(unsafe.Pointer(&args)),
+		)
 		return errno == 0
 	}
 
@@ -67,7 +72,12 @@ func smbusProbe(fd int, addr int, hasQuick bool) bool {
 		size:      i2cSmbusByte,
 		data:      &data,
 	}
-	_, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(fd), i2cSmbus, uintptr(unsafe.Pointer(&args)))
+	_, _, errno := syscall.Syscall(
+		syscall.SYS_IOCTL,
+		uintptr(fd),
+		i2cSmbus,
+		uintptr(unsafe.Pointer(&args)),
+	)
 	return errno == 0
 }
 
@@ -83,16 +93,29 @@ func (t *I2CTool) scan(args map[string]any) *ToolResult {
 	devPath := fmt.Sprintf("/dev/i2c-%s", bus)
 	fd, err := syscall.Open(devPath, syscall.O_RDWR, 0)
 	if err != nil {
-		return ErrorResult(fmt.Sprintf("failed to open %s: %v (check permissions and i2c-dev module)", devPath, err))
+		return ErrorResult(
+			fmt.Sprintf(
+				"failed to open %s: %v (check permissions and i2c-dev module)",
+				devPath,
+				err,
+			),
+		)
 	}
 	defer syscall.Close(fd)
 
 	// Query adapter capabilities to determine available probe methods.
 	// I2C_FUNCS writes an unsigned long, which is word-sized on Linux.
 	var funcs uintptr
-	_, _, errno := syscall.Syscall(syscall.SYS_IOCTL, uintptr(fd), i2cFuncs, uintptr(unsafe.Pointer(&funcs)))
+	_, _, errno := syscall.Syscall(
+		syscall.SYS_IOCTL,
+		uintptr(fd),
+		i2cFuncs,
+		uintptr(unsafe.Pointer(&funcs)),
+	)
 	if errno != 0 {
-		return ErrorResult(fmt.Sprintf("failed to query I2C adapter capabilities on %s: %v", devPath, errno))
+		return ErrorResult(
+			fmt.Sprintf("failed to query I2C adapter capabilities on %s: %v", devPath, errno),
+		)
 	}
 
 	hasQuick := funcs&i2cFuncSmbusQuick != 0
@@ -100,7 +123,10 @@ func (t *I2CTool) scan(args map[string]any) *ToolResult {
 
 	if !hasQuick && !hasReadByte {
 		return ErrorResult(
-			fmt.Sprintf("I2C adapter %s supports neither SMBus Quick nor Read Byte — cannot probe safely", devPath),
+			fmt.Sprintf(
+				"I2C adapter %s supports neither SMBus Quick nor Read Byte — cannot probe safely",
+				devPath,
+			),
 		)
 	}
 
@@ -132,7 +158,9 @@ func (t *I2CTool) scan(args map[string]any) *ToolResult {
 	}
 
 	if len(found) == 0 {
-		return SilentResult(fmt.Sprintf("No devices found on %s. Check wiring and pull-up resistors.", devPath))
+		return SilentResult(
+			fmt.Sprintf("No devices found on %s. Check wiring and pull-up resistors.", devPath),
+		)
 	}
 
 	result, _ := json.MarshalIndent(map[string]any{

@@ -275,7 +275,13 @@ func TestAgentLoop_EmitsSteeringAndSkippedToolEvents(t *testing.T) {
 
 	resultCh := make(chan string, 1)
 	go func() {
-		resp, _ := al.ProcessDirectWithChannel(context.Background(), "do something", "test-session", "test", "chat1")
+		resp, _ := al.ProcessDirectWithChannel(
+			context.Background(),
+			"do something",
+			"test-session",
+			"test",
+			"chat1",
+		)
 		resultCh <- resp
 	}()
 
@@ -338,7 +344,11 @@ func TestAgentLoop_EmitsSteeringAndSkippedToolEvents(t *testing.T) {
 		t.Fatalf("expected steering interrupt kind, got %q", interruptPayload.Kind)
 	}
 	if interruptPayload.ContentLen != len("change course") {
-		t.Fatalf("expected interrupt content len %d, got %d", len("change course"), interruptPayload.ContentLen)
+		t.Fatalf(
+			"expected interrupt content len %d, got %d",
+			len("change course"),
+			interruptPayload.ContentLen,
+		)
 	}
 }
 
@@ -360,7 +370,9 @@ func TestAgentLoop_EmitsContextCompressEventOnRetry(t *testing.T) {
 		},
 	}
 
-	contextErr := stringError("InvalidParameter: Total tokens of image and text exceed max message tokens")
+	contextErr := stringError(
+		"InvalidParameter: Total tokens of image and text exceed max message tokens",
+	)
 	provider := &failFirstMockProvider{
 		failures:    1,
 		failError:   contextErr,
@@ -603,7 +615,12 @@ func collectEventStream(ch <-chan Event) []Event {
 	}
 }
 
-func waitForEvent(t *testing.T, ch <-chan Event, timeout time.Duration, match func(Event) bool) Event {
+func waitForEvent(
+	t *testing.T,
+	ch <-chan Event,
+	timeout time.Duration,
+	match func(Event) bool,
+) Event {
 	t.Helper()
 
 	timer := time.NewTimer(timeout)

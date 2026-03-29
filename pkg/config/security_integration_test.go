@@ -35,7 +35,10 @@ func TestJSONUnmarshalPrivateFields(t *testing.T) {
 		t.Errorf("PublicField = %q, want 'pub'", s.PublicField)
 	}
 	if s.privateField != "" {
-		t.Errorf("privateField = %q, want empty because unexported fields are ignored", s.privateField)
+		t.Errorf(
+			"privateField = %q, want empty because unexported fields are ignored",
+			s.privateField,
+		)
 	}
 }
 
@@ -352,13 +355,21 @@ skills:
 
 		// Verify Channel tokens via Key() methods
 		// Telegram
-		assert.Equal(t, "123456789:ABCdefGHIjklMNOpqrsTUVwxyz", cfg.Channels.Telegram.Token.String())
+		assert.Equal(
+			t,
+			"123456789:ABCdefGHIjklMNOpqrsTUVwxyz",
+			cfg.Channels.Telegram.Token.String(),
+		)
 		t.Logf("Telegram Token(): %s", cfg.Channels.Telegram.Token.String())
 
 		// Feishu
 		assert.Equal(t, "feishu_test_app_secret", cfg.Channels.Feishu.AppSecret.String())
 		assert.Equal(t, "feishu_test_encrypt_key", cfg.Channels.Feishu.EncryptKey.String())
-		assert.Equal(t, "feishu_test_verification_token", cfg.Channels.Feishu.VerificationToken.String())
+		assert.Equal(
+			t,
+			"feishu_test_verification_token",
+			cfg.Channels.Feishu.VerificationToken.String(),
+		)
 		t.Logf("Feishu AppSecret(): %s", cfg.Channels.Feishu.AppSecret.String())
 		t.Logf("Feishu EncryptKey(): %s", cfg.Channels.Feishu.EncryptKey.String())
 		t.Logf("Feishu VerificationToken(): %s", cfg.Channels.Feishu.VerificationToken.String())
@@ -383,7 +394,11 @@ skills:
 
 		// LINE
 		assert.Equal(t, "line_test_channel_secret", cfg.Channels.LINE.ChannelSecret.String())
-		assert.Equal(t, "line_test_channel_access_token", cfg.Channels.LINE.ChannelAccessToken.String())
+		assert.Equal(
+			t,
+			"line_test_channel_access_token",
+			cfg.Channels.LINE.ChannelAccessToken.String(),
+		)
 		t.Logf("LINE ChannelSecret(): %s", cfg.Channels.LINE.ChannelSecret.String())
 		t.Logf("LINE ChannelAccessToken(): %s", cfg.Channels.LINE.ChannelAccessToken.String())
 
@@ -431,7 +446,11 @@ skills:
 		assert.Equal(t, "ghp-github-from-file-abc123", cfg.Tools.Skills.Github.Token.String())
 		t.Logf("Github Token(): %s", cfg.Tools.Skills.Github.Token.String())
 
-		assert.Equal(t, "clawhub-auth-token-from-file", cfg.Tools.Skills.Registries.ClawHub.AuthToken.String())
+		assert.Equal(
+			t,
+			"clawhub-auth-token-from-file",
+			cfg.Tools.Skills.Registries.ClawHub.AuthToken.String(),
+		)
 		t.Logf("ClawHub AuthToken(): %s", cfg.Tools.Skills.Registries.ClawHub.AuthToken.String())
 
 		t.Log("All security keys are successfully accessible via their respective Key() methods")

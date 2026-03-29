@@ -25,7 +25,11 @@ import (
 // Non-image files (documents, audio, video) have their local path injected
 // into Content so the agent can access them via file tools like read_file.
 // Returns a new slice; original messages are not mutated.
-func resolveMediaRefs(messages []providers.Message, store media.MediaStore, maxSize int) []providers.Message {
+func resolveMediaRefs(
+	messages []providers.Message,
+	store media.MediaStore,
+	maxSize int,
+) []providers.Message {
 	if store == nil {
 		return messages
 	}

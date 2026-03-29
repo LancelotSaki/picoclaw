@@ -69,7 +69,9 @@ func (t *SPITool) Parameters() map[string]any {
 
 func (t *SPITool) Execute(ctx context.Context, args map[string]any) *ToolResult {
 	if runtime.GOOS != "linux" {
-		return ErrorResult("SPI is only supported on Linux. This tool requires /dev/spidev* device files.")
+		return ErrorResult(
+			"SPI is only supported on Linux. This tool requires /dev/spidev* device files.",
+		)
 	}
 
 	action, ok := args["action"].(string)
@@ -124,7 +126,9 @@ func (t *SPITool) list() *ToolResult {
 // parseSPIArgs extracts and validates common SPI parameters
 //
 //nolint:unused // Used by spi_linux.go
-func parseSPIArgs(args map[string]any) (device string, speed uint32, mode uint8, bits uint8, errMsg string) {
+func parseSPIArgs(
+	args map[string]any,
+) (device string, speed uint32, mode uint8, bits uint8, errMsg string) {
 	dev, ok := args["device"].(string)
 	if !ok || dev == "" {
 		return "", 0, 0, 0, "device is required (e.g. \"2.0\" for /dev/spidev2.0)"

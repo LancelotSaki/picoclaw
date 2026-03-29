@@ -100,8 +100,13 @@ func TestShellTool_Timeout(t *testing.T) {
 	}
 
 	// Should mention timeout
-	if !strings.Contains(result.ForLLM, "timed out") && !strings.Contains(result.ForUser, "timed out") {
-		t.Errorf("Expected timeout message, got ForLLM: %s, ForUser: %s", result.ForLLM, result.ForUser)
+	if !strings.Contains(result.ForLLM, "timed out") &&
+		!strings.Contains(result.ForUser, "timed out") {
+		t.Errorf(
+			"Expected timeout message, got ForLLM: %s, ForUser: %s",
+			result.ForLLM,
+			result.ForUser,
+		)
 	}
 }
 
@@ -156,7 +161,11 @@ func TestShellTool_DangerousCommand(t *testing.T) {
 	}
 
 	if !strings.Contains(result.ForLLM, "blocked") && !strings.Contains(result.ForUser, "blocked") {
-		t.Errorf("Expected 'blocked' message, got ForLLM: %s, ForUser: %s", result.ForLLM, result.ForUser)
+		t.Errorf(
+			"Expected 'blocked' message, got ForLLM: %s, ForUser: %s",
+			result.ForLLM,
+			result.ForUser,
+		)
 	}
 }
 
@@ -177,7 +186,11 @@ func TestShellTool_DangerousCommand_KillBlocked(t *testing.T) {
 		t.Errorf("Expected kill command to be blocked")
 	}
 	if !strings.Contains(result.ForLLM, "blocked") && !strings.Contains(result.ForUser, "blocked") {
-		t.Errorf("Expected blocked message, got ForLLM: %s, ForUser: %s", result.ForLLM, result.ForUser)
+		t.Errorf(
+			"Expected blocked message, got ForLLM: %s, ForUser: %s",
+			result.ForLLM,
+			result.ForUser,
+		)
 	}
 }
 
@@ -269,7 +282,10 @@ func TestShellTool_WorkingDir_OutsideWorkspace(t *testing.T) {
 	})
 
 	if !result.IsError {
-		t.Fatalf("expected working_dir outside workspace to be blocked, got output: %s", result.ForLLM)
+		t.Fatalf(
+			"expected working_dir outside workspace to be blocked, got output: %s",
+			result.ForLLM,
+		)
 	}
 	if !strings.Contains(result.ForLLM, "blocked") {
 		t.Errorf("expected 'blocked' in error, got: %s", result.ForLLM)
@@ -444,7 +460,10 @@ func TestShellTool_DevNullAllowed(t *testing.T) {
 	}
 
 	for _, cmd := range commands {
-		result := tool.Execute(context.Background(), map[string]any{"action": "run", "command": cmd})
+		result := tool.Execute(
+			context.Background(),
+			map[string]any{"action": "run", "command": cmd},
+		)
 		if result.IsError && strings.Contains(result.ForLLM, "blocked") {
 			t.Errorf("command should not be blocked: %s\n  error: %s", cmd, result.ForLLM)
 		}
@@ -473,7 +492,10 @@ func TestShellTool_BlockDevices(t *testing.T) {
 	}
 
 	for _, cmd := range blocked {
-		result := tool.Execute(context.Background(), map[string]any{"action": "run", "command": cmd})
+		result := tool.Execute(
+			context.Background(),
+			map[string]any{"action": "run", "command": cmd},
+		)
 		if !result.IsError {
 			t.Errorf("expected block device write to be blocked: %s", cmd)
 		}
@@ -497,9 +519,16 @@ func TestShellTool_SafePathsInWorkspaceRestriction(t *testing.T) {
 	}
 
 	for _, cmd := range commands {
-		result := tool.Execute(context.Background(), map[string]any{"action": "run", "command": cmd})
+		result := tool.Execute(
+			context.Background(),
+			map[string]any{"action": "run", "command": cmd},
+		)
 		if result.IsError && strings.Contains(result.ForLLM, "path outside working dir") {
-			t.Errorf("safe path should not be blocked by workspace check: %s\n  error: %s", cmd, result.ForLLM)
+			t.Errorf(
+				"safe path should not be blocked by workspace check: %s\n  error: %s",
+				cmd,
+				result.ForLLM,
+			)
 		}
 	}
 }
@@ -591,7 +620,10 @@ func TestShellTool_CustomAllowPatterns(t *testing.T) {
 		"command": "git push origin main",
 	})
 	if result.IsError && strings.Contains(result.ForLLM, "blocked") {
-		t.Errorf("custom allow pattern should exempt 'git push origin main', got: %s", result.ForLLM)
+		t.Errorf(
+			"custom allow pattern should exempt 'git push origin main', got: %s",
+			result.ForLLM,
+		)
 	}
 
 	// "git push upstream main" should still be blocked (does not match allow pattern).
@@ -629,7 +661,11 @@ func TestShellTool_URLsNotBlocked(t *testing.T) {
 		result := tool.Execute(ctx, map[string]any{"action": "run", "command": cmd})
 		cancel()
 		if result.IsError && strings.Contains(result.ForLLM, "path outside working dir") {
-			t.Errorf("command with URL should not be blocked by workspace check: %s\n  error: %s", cmd, result.ForLLM)
+			t.Errorf(
+				"command with URL should not be blocked by workspace check: %s\n  error: %s",
+				cmd,
+				result.ForLLM,
+			)
 		}
 	}
 }
@@ -652,7 +688,10 @@ func TestShellTool_FileURISandboxing(t *testing.T) {
 	}
 
 	for _, cmd := range blockedCommands {
-		result := tool.Execute(context.Background(), map[string]any{"action": "run", "command": cmd})
+		result := tool.Execute(
+			context.Background(),
+			map[string]any{"action": "run", "command": cmd},
+		)
 		if !result.IsError || !strings.Contains(result.ForLLM, "path outside working dir") {
 			t.Errorf("file:// URI outside workspace should be blocked: %s", cmd)
 		}
@@ -670,9 +709,16 @@ func TestShellTool_FileURISandboxing(t *testing.T) {
 	}
 
 	for _, cmd := range allowedCommands {
-		result := tool.Execute(context.Background(), map[string]any{"action": "run", "command": cmd})
+		result := tool.Execute(
+			context.Background(),
+			map[string]any{"action": "run", "command": cmd},
+		)
 		if result.IsError && strings.Contains(result.ForLLM, "path outside working dir") {
-			t.Errorf("file:// URI inside workspace should be allowed: %s\n  error: %s", cmd, result.ForLLM)
+			t.Errorf(
+				"file:// URI inside workspace should be allowed: %s\n  error: %s",
+				cmd,
+				result.ForLLM,
+			)
 		}
 	}
 }
@@ -696,7 +742,10 @@ func TestShellTool_URLBypassPrevented(t *testing.T) {
 	}
 
 	for _, cmd := range blockedCommands {
-		result := tool.Execute(context.Background(), map[string]any{"action": "run", "command": cmd})
+		result := tool.Execute(
+			context.Background(),
+			map[string]any{"action": "run", "command": cmd},
+		)
 		if !result.IsError || !strings.Contains(result.ForLLM, "path outside working dir") {
 			t.Errorf("bypass attempt should be blocked: %q\n  got: %s", cmd, result.ForLLM)
 		}
@@ -1221,7 +1270,9 @@ func TestShellTool_PTY_ProcessGroupKill(t *testing.T) {
 	// The binary is created in /tmp/test_pgroup.c and compiled as part of test setup.
 	testBinary := "/tmp/test_pgroup"
 	if _, err := os.Stat(testBinary); os.IsNotExist(err) {
-		t.Skip("Test binary /tmp/test_pgroup not found - run: gcc -o /tmp/test_pgroup /tmp/test_pgroup.c")
+		t.Skip(
+			"Test binary /tmp/test_pgroup not found - run: gcc -o /tmp/test_pgroup /tmp/test_pgroup.c",
+		)
 	}
 
 	tool, err := NewExecTool("", false)
@@ -1555,8 +1606,16 @@ func TestDetectPtyKeyMode(t *testing.T) {
 		{"rmkx only", "\x1b[?1l\x1b>", PtyKeyModeCSI},
 		{"both smkx first", "\x1b[?1h\x1b=...\x1b[?1l\x1b>", PtyKeyModeCSI},
 		{"both rmkx first", "\x1b[?1l\x1b>...\x1b[?1h\x1b=", PtyKeyModeSS3},
-		{"multiple toggles smkx last", "\x1b[?1h\x1b=...\x1b[?1l\x1b>...\x1b[?1h\x1b=", PtyKeyModeSS3},
-		{"multiple toggles rmkx last", "\x1b[?1l\x1b>...\x1b[?1h\x1b=...\x1b[?1l\x1b>", PtyKeyModeCSI},
+		{
+			"multiple toggles smkx last",
+			"\x1b[?1h\x1b=...\x1b[?1l\x1b>...\x1b[?1h\x1b=",
+			PtyKeyModeSS3,
+		},
+		{
+			"multiple toggles rmkx last",
+			"\x1b[?1l\x1b>...\x1b[?1h\x1b=...\x1b[?1l\x1b>",
+			PtyKeyModeCSI,
+		},
 		{"partial smkx", "\x1b[?1h", PtyKeyModeSS3},
 		{"partial rmkx", "\x1b[?1l", PtyKeyModeCSI},
 	}

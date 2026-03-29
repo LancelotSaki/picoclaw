@@ -896,7 +896,10 @@ func TestAgentLoop_Run_AutoContinuesLateSteeringMessage(t *testing.T) {
 	defer cancelNoExtra()
 	select {
 	case out2 := <-msgBus.OutboundChan():
-		t.Fatalf("expected stale direct response to be suppressed, got extra outbound %q", out2.Content)
+		t.Fatalf(
+			"expected stale direct response to be suppressed, got extra outbound %q",
+			out2.Content,
+		)
 	case <-noExtraCtx.Done():
 	}
 
@@ -1044,7 +1047,11 @@ func TestAgentLoop_Continue_PreservesSteeringMedia(t *testing.T) {
 	if err = os.WriteFile(pngPath, pngHeader, 0o644); err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
-	ref, err := store.Store(pngPath, media.MediaMeta{Filename: "steer.png", ContentType: "image/png"}, "test")
+	ref, err := store.Store(
+		pngPath,
+		media.MediaMeta{Filename: "steer.png", ContentType: "image/png"},
+		"test",
+	)
 	if err != nil {
 		t.Fatalf("Store failed: %v", err)
 	}
@@ -1236,7 +1243,10 @@ func TestAgentLoop_InterruptGraceful_UsesTerminalNoToolCall(t *testing.T) {
 		t.Fatalf("expected 2 provider calls, got %d", calls)
 	}
 	if terminalToolsCount != 0 {
-		t.Fatalf("expected graceful terminal call to disable tools, got %d tool defs", terminalToolsCount)
+		t.Fatalf(
+			"expected graceful terminal call to disable tools, got %d tool defs",
+			terminalToolsCount,
+		)
 	}
 
 	foundHint := false
@@ -1247,7 +1257,8 @@ func TestAgentLoop_InterruptGraceful_UsesTerminalNoToolCall(t *testing.T) {
 		if msg.Role == "user" && msg.Content == expectedHint {
 			foundHint = true
 		}
-		if msg.Role == "tool" && msg.ToolCallID == "call_2" && msg.Content == "Skipped due to graceful interrupt." {
+		if msg.Role == "tool" && msg.ToolCallID == "call_2" &&
+			msg.Content == "Skipped due to graceful interrupt." {
 			foundSkipped = true
 		}
 	}
@@ -1539,7 +1550,8 @@ func TestAgentLoop_Steering_SkippedToolsHaveErrorResults(t *testing.T) {
 
 	foundSkipped := false
 	for _, m := range msgs {
-		if m.Role == "tool" && m.ToolCallID == "call_2" && m.Content == "Skipped due to queued user message." {
+		if m.Role == "tool" && m.ToolCallID == "call_2" &&
+			m.Content == "Skipped due to queued user message." {
 			foundSkipped = true
 			break
 		}
@@ -1547,7 +1559,13 @@ func TestAgentLoop_Steering_SkippedToolsHaveErrorResults(t *testing.T) {
 	if !foundSkipped {
 		// Log what we actually got
 		for i, m := range msgs {
-			t.Logf("msg[%d]: role=%s toolCallID=%s content=%s", i, m.Role, m.ToolCallID, truncate(m.Content, 80))
+			t.Logf(
+				"msg[%d]: role=%s toolCallID=%s content=%s",
+				i,
+				m.Role,
+				m.ToolCallID,
+				truncate(m.Content, 80),
+			)
 		}
 		t.Fatal("expected skipped tool result for call_2")
 	}

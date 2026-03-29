@@ -571,7 +571,8 @@ func TestHardAbortSessionRollback(t *testing.T) {
 	}
 
 	// Verify the content matches the initial state
-	if finalHistory[0].Content != "initial message 1" || finalHistory[1].Content != "initial response 1" {
+	if finalHistory[0].Content != "initial message 1" ||
+		finalHistory[1].Content != "initial response 1" {
 		t.Error("history content does not match initial state after rollback")
 	}
 }
@@ -1290,7 +1291,12 @@ func TestDeliverSubTurnResult_RaceWithFinish(t *testing.T) {
 	finalOrphan := orphanCount
 	mu.Unlock()
 
-	t.Logf("Delivered: %d, Orphan: %d, Total: %d", finalDelivered, finalOrphan, finalDelivered+finalOrphan)
+	t.Logf(
+		"Delivered: %d, Orphan: %d, Total: %d",
+		finalDelivered,
+		finalOrphan,
+		finalDelivered+finalOrphan,
+	)
 
 	// With the new drainPendingResults behavior, the total events may be >= numResults
 	// because Finish() drains remaining results from the channel and emits them as orphans.

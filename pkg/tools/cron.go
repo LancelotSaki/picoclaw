@@ -15,7 +15,10 @@ import (
 
 // JobExecutor is the interface for executing cron jobs through the agent
 type JobExecutor interface {
-	ProcessDirectWithChannel(ctx context.Context, content, sessionKey, channel, chatID string) (string, error)
+	ProcessDirectWithChannel(
+		ctx context.Context,
+		content, sessionKey, channel, chatID string,
+	) (string, error)
 	// PublishResponseIfNeeded sends response to the outbound bus only when the
 	// agent did not already deliver content through the message tool in this round.
 	PublishResponseIfNeeded(ctx context.Context, channel, chatID, response string)
@@ -34,8 +37,13 @@ type CronTool struct {
 // NewCronTool creates a new CronTool
 // execTimeout: 0 means no timeout, >0 sets the timeout duration
 func NewCronTool(
-	cronService *cron.CronService, executor JobExecutor, msgBus *bus.MessageBus, workspace string, restrict bool,
-	execTimeout time.Duration, config *config.Config,
+	cronService *cron.CronService,
+	executor JobExecutor,
+	msgBus *bus.MessageBus,
+	workspace string,
+	restrict bool,
+	execTimeout time.Duration,
+	config *config.Config,
 ) (*CronTool, error) {
 	allowCommand := true
 	execEnabled := true
@@ -156,7 +164,9 @@ func (t *CronTool) addJob(ctx context.Context, args map[string]any) *ToolResult 
 	chatID := ToolChatID(ctx)
 
 	if channel == "" || chatID == "" {
-		return ErrorResult("no session context (channel/chat_id not set). Use this tool in an active conversation.")
+		return ErrorResult(
+			"no session context (channel/chat_id not set). Use this tool in an active conversation.",
+		)
 	}
 
 	message, ok := args["message"].(string)
@@ -208,7 +218,9 @@ func (t *CronTool) addJob(ctx context.Context, args map[string]any) *ToolResult 
 	// Validate type parameter (server-side whitelist, not just LLM schema hint)
 	msgType, _ := args["type"].(string)
 	if msgType != "" && msgType != "message" && msgType != "directive" {
-		return ErrorResult(fmt.Sprintf("invalid type %q, must be 'message' or 'directive'", msgType))
+		return ErrorResult(
+			fmt.Sprintf("invalid type %q, must be 'message' or 'directive'", msgType),
+		)
 	}
 
 	// GHSA-pv8c-p6jf-3fpp: command scheduling requires internal channel. When

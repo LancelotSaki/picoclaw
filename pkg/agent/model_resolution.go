@@ -26,7 +26,8 @@ func buildModelListResolver(cfg *config.Config) func(raw string) (string, bool) 
 			return "", false
 		}
 
-		if mc, err := cfg.GetModelConfig(raw); err == nil && mc != nil && strings.TrimSpace(mc.Model) != "" {
+		if mc, err := cfg.GetModelConfig(raw); err == nil && mc != nil &&
+			strings.TrimSpace(mc.Model) != "" {
 			return ensureProtocol(mc.Model), true
 		}
 
@@ -78,7 +79,10 @@ func resolvedCandidateProvider(candidates []providers.FallbackCandidate, fallbac
 	return fallback
 }
 
-func resolvedModelConfig(cfg *config.Config, modelName, workspace string) (*config.ModelConfig, error) {
+func resolvedModelConfig(
+	cfg *config.Config,
+	modelName, workspace string,
+) (*config.ModelConfig, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("config is nil")
 	}

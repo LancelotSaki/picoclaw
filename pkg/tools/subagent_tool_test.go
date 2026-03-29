@@ -316,7 +316,11 @@ func TestSubagentTool_ForUserTruncation(t *testing.T) {
 	// ForUser should be truncated to 500 chars + "..."
 	maxUserLen := 500
 	if len(result.ForUser) > maxUserLen+3 { // +3 for "..."
-		t.Errorf("ForUser should be truncated to ~%d chars, got: %d", maxUserLen, len(result.ForUser))
+		t.Errorf(
+			"ForUser should be truncated to ~%d chars, got: %d",
+			maxUserLen,
+			len(result.ForUser),
+		)
 	}
 
 	// ForLLM should have full content

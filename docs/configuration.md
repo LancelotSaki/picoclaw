@@ -246,6 +246,88 @@ In other words: **channel + account form the candidate set; peer/guild/team then
 - **Wildcard catches too much traffic?** Add more specific `peer/guild/team` rules for critical paths.
 - **Unexpected default fallback?** Confirm `agent_id` exists and is not misspelled.
 
+### Agent Tool Allowlist
+
+You can restrict an individual agent to a subset of runtime tools with `agents.list[].tools`.
+
+If `tools` is omitted, the agent gets the normal globally enabled tool set. If `tools` is present, PicoClaw registers only the listed tools for that agent.
+
+```json
+{
+  "agents": {
+    "list": [
+      {
+        "id": "research",
+        "name": "Research Agent",
+        "tools": ["read_file", "write_file", "web_search", "web_fetch", "message"]
+      }
+    ]
+  }
+}
+```
+
+Notes:
+
+- This is an allowlist, not a preference hint.
+- Tool names are matched against the runtime tool name 1:1.
+- Use runtime tool names such as `web_search`, `web_fetch`, `spawn`, `subagent`, `send_file`.
+- The `available_tools` field in Agent Discovery reflects the filtered runtime result.
+
+### Agent Discovery (Automatic)
+
+When more than one agent exists, PicoClaw injects a structured agent registry into each agent's system prompt on every turn. No extra `list_agents` tool call is required.
+
+This registry is intended to make delegation concrete and reliable, especially when using `spawn` with a target `agent_id`.
+
+Each entry includes:
+
+| Field | Meaning |
+|-------|---------|
+| `id` | Stable agent id |
+| `name` | Human-friendly agent name |
+| `description` | Short capability summary |
+| `model` | Current model used by that agent |
+| `available_tools` | Tool names currently visible to that agent |
+| `channels` | Channels that route to that agent |
+
+Important behavior:
+
+- The discovery section includes the current agent's own entry, so the model has self-awareness.
+- `available_tools` is the most important field for delegation. It reflects the tools the target agent can actually use, not just a natural-language description.
+- `description` is sourced from `AGENT.md` frontmatter `description` when available, otherwise from the first meaningful paragraph of `AGENT.md`, and finally `SOUL.md`.
+- `name` comes from `agents.list[].name` first, then `AGENT.md` frontmatter `name`, then falls back to the agent id.
+- `channels` come from routing state:
+  - the default agent exposes enabled channels
+  - other agents expose channels that explicitly bind to them through `bindings`
+
+Example injected shape:
+
+```json
+{
+  "current_agent_id": "main",
+  "agents": [
+    {
+      "id": "main",
+      "name": "Main Assistant",
+      "description": "Generalist agent for day-to-day requests.",
+      "model": "gpt-4o-mini",
+      "available_tools": ["read_file", "write_file", "exec", "spawn"],
+      "channels": ["telegram", "discord"]
+    },
+    {
+      "id": "research",
+      "name": "Research Agent",
+      "description": "Specialist for long-form investigation and web work.",
+      "model": "claude-sonnet-4.5",
+      "available_tools": ["web_search", "web_fetch", "read_file"],
+      "channels": ["telegram"]
+    }
+  ]
+}
+```
+
+In practice, this means a generalist agent can see that a peer has `["web_search", "web_fetch"]` while it only has local file tools, and can decide to delegate to that peer instead of guessing.
+
 ### 🔒 Security Sandbox
 
 PicoClaw runs in a sandboxed environment by default. The agent can only access files and execute commands within the configured workspace.

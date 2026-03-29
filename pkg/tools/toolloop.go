@@ -64,7 +64,13 @@ func RunToolLoop(
 			llmOpts = map[string]any{}
 		}
 		// 3. Call LLM
-		response, err := config.Provider.Chat(ctx, messages, providerToolDefs, config.Model, llmOpts)
+		response, err := config.Provider.Chat(
+			ctx,
+			messages,
+			providerToolDefs,
+			config.Model,
+			llmOpts,
+		)
 		if err != nil {
 			logger.ErrorCF("toolloop", "LLM call failed",
 				map[string]any{
@@ -148,7 +154,14 @@ func RunToolLoop(
 
 				var toolResult *ToolResult
 				if config.Tools != nil {
-					toolResult = config.Tools.ExecuteWithContext(ctx, tc.Name, tc.Arguments, channel, chatID, nil)
+					toolResult = config.Tools.ExecuteWithContext(
+						ctx,
+						tc.Name,
+						tc.Arguments,
+						channel,
+						chatID,
+						nil,
+					)
 				} else {
 					toolResult = ErrorResult("No tools available")
 				}

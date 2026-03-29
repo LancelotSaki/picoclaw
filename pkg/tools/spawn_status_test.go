@@ -195,7 +195,12 @@ func TestSpawnStatusTool_TaskID_NonString(t *testing.T) {
 	for _, badVal := range []any{42, 3.14, true, map[string]any{"x": 1}, []string{"a"}} {
 		result := tool.Execute(context.Background(), map[string]any{"task_id": badVal})
 		if !result.IsError {
-			t.Errorf("Expected error for task_id=%T(%v), got success: %s", badVal, badVal, result.ForLLM)
+			t.Errorf(
+				"Expected error for task_id=%T(%v), got success: %s",
+				badVal,
+				badVal,
+				result.ForLLM,
+			)
 		}
 		if !strings.Contains(result.ForLLM, "task_id must be a string") {
 			t.Errorf("Expected type-error message, got: %s", result.ForLLM)
@@ -319,7 +324,10 @@ func TestSpawnStatusTool_SortByCreatedTimestamp(t *testing.T) {
 		t.Fatalf("Both task IDs should appear in output:\n%s", result.ForLLM)
 	}
 	if pos2 > pos10 {
-		t.Errorf("Expected subagent-2 (created first) to appear before subagent-10, but got:\n%s", result.ForLLM)
+		t.Errorf(
+			"Expected subagent-2 (created first) to appear before subagent-10, but got:\n%s",
+			result.ForLLM,
+		)
 	}
 }
 

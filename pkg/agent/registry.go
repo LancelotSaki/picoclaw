@@ -12,6 +12,7 @@ import (
 
 // AgentRegistry manages multiple agent instances and routes messages to them.
 type AgentRegistry struct {
+	cfg      *config.Config
 	agents   map[string]*AgentInstance
 	resolver *routing.RouteResolver
 	mu       sync.RWMutex
@@ -23,6 +24,7 @@ func NewAgentRegistry(
 	provider providers.LLMProvider,
 ) *AgentRegistry {
 	registry := &AgentRegistry{
+		cfg:      cfg,
 		agents:   make(map[string]*AgentInstance),
 		resolver: routing.NewRouteResolver(cfg),
 	}
@@ -49,6 +51,14 @@ func NewAgentRegistry(
 					"workspace": instance.Workspace,
 					"model":     instance.Model,
 				})
+		}
+	}
+
+	for id, instance := range registry.agents {
+		if instance.ContextBuilder != nil {
+			instance.ContextBuilder.
+				WithAgentIdentity(id).
+				WithAgentDiscovery(registry.ListAgents)
 		}
 	}
 
@@ -130,11 +140,13 @@ func (r *AgentRegistry) Close() {
 func (r *AgentRegistry) GetDefaultAgent() *AgentInstance {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	if agent, ok := r.agents["main"]; ok {
-		return agent
+	if id := r.defaultAgentIDLocked(); id != "" {
+		if agent, ok := r.agents[id]; ok {
+			return agent
+		}
 	}
-	for _, agent := range r.agents {
-		return agent
+	for id := range r.agents {
+		return r.agents[id]
 	}
 	return nil
 }

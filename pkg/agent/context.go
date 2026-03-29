@@ -22,11 +22,13 @@ import (
 
 type ContextBuilder struct {
 	workspace          string
+	agentID            string
 	skillsLoader       *skills.SkillsLoader
 	memory             *MemoryStore
 	toolDiscoveryBM25  bool
 	toolDiscoveryRegex bool
 	splitOnMarker      bool
+	agentDiscovery     func(workspace string) []AgentDescriptor
 
 	// Cache for system prompt to avoid rebuilding on every call.
 	// This fixes issue #607: repeated reprocessing of the entire context.
@@ -55,6 +57,18 @@ func (cb *ContextBuilder) WithToolDiscovery(useBM25, useRegex bool) *ContextBuil
 
 func (cb *ContextBuilder) WithSplitOnMarker(enabled bool) *ContextBuilder {
 	cb.splitOnMarker = enabled
+	return cb
+}
+
+func (cb *ContextBuilder) WithAgentIdentity(agentID string) *ContextBuilder {
+	cb.agentID = strings.TrimSpace(agentID)
+	return cb
+}
+
+func (cb *ContextBuilder) WithAgentDiscovery(
+	discover func(workspace string) []AgentDescriptor,
+) *ContextBuilder {
+	cb.agentDiscovery = discover
 	return cb
 }
 
@@ -113,7 +127,14 @@ Your workspace is at: %s
 4. **Context summaries** - Conversation summaries provided as context are approximate references only. They may be incomplete or outdated. Always defer to explicit user instructions over summary content.
 
 %s`,
-		version, workspacePath, workspacePath, workspacePath, workspacePath, workspacePath, toolDiscovery)
+		version,
+		workspacePath,
+		workspacePath,
+		workspacePath,
+		workspacePath,
+		workspacePath,
+		toolDiscovery,
+	)
 }
 
 func (cb *ContextBuilder) getDiscoveryRule() string {
@@ -173,6 +194,13 @@ Each part separated by the marker will be sent as an independent message.`)
 
 	// Join with "---" separator
 	return strings.Join(parts, "\n\n---\n\n")
+}
+
+func (cb *ContextBuilder) buildAgentDiscoveryContext() string {
+	if cb.agentDiscovery == nil {
+		return ""
+	}
+	return formatAgentDiscoverySection(cb.agentID, cb.agentDiscovery(cb.workspace))
 }
 
 // BuildSystemPromptWithCache returns the cached system prompt if available
@@ -500,7 +528,9 @@ func formatCurrentSenderLine(senderID, senderDisplayName string) string {
 	}
 }
 
-func (cb *ContextBuilder) buildDynamicContext(channel, chatID, senderID, senderDisplayName string) string {
+func (cb *ContextBuilder) buildDynamicContext(
+	channel, chatID, senderID, senderDisplayName string,
+) string {
 	now := time.Now().Format("2006-01-02 15:04 (Monday)")
 	rt := fmt.Sprintf("%s %s, Go %s", runtime.GOOS, runtime.GOARCH, runtime.Version())
 
@@ -540,6 +570,7 @@ func (cb *ContextBuilder) BuildMessages(
 
 	// Build short dynamic context (time, runtime, session) — changes per request
 	dynamicCtx := cb.buildDynamicContext(channel, chatID, senderID, senderDisplayName)
+	discoveryCtx := cb.buildAgentDiscoveryContext()
 
 	// Compose a single system message: static (cached) + dynamic + optional summary.
 	// Keeping all system content in one message ensures every provider adapter can
@@ -550,16 +581,33 @@ func (cb *ContextBuilder) BuildMessages(
 	// cache-aware adapters (Anthropic) can set per-block cache_control.
 	// The static block is marked "ephemeral" — its prefix hash is stable
 	// across requests, enabling LLM-side KV cache reuse.
-	stringParts := []string{staticPrompt, dynamicCtx}
+	stringParts := []string{staticPrompt}
 
 	contentBlocks := []providers.ContentBlock{
-		{Type: "text", Text: staticPrompt, CacheControl: &providers.CacheControl{Type: "ephemeral"}},
-		{Type: "text", Text: dynamicCtx},
+		{
+			Type:         "text",
+			Text:         staticPrompt,
+			CacheControl: &providers.CacheControl{Type: "ephemeral"},
+		},
 	}
+
+	if discoveryCtx != "" {
+		stringParts = append(stringParts, discoveryCtx)
+		contentBlocks = append(
+			contentBlocks,
+			providers.ContentBlock{Type: "text", Text: discoveryCtx},
+		)
+	}
+
+	stringParts = append(stringParts, dynamicCtx)
+	contentBlocks = append(contentBlocks, providers.ContentBlock{Type: "text", Text: dynamicCtx})
 
 	if skillsText := cb.buildActiveSkillsContext(activeSkills); skillsText != "" {
 		stringParts = append(stringParts, skillsText)
-		contentBlocks = append(contentBlocks, providers.ContentBlock{Type: "text", Text: skillsText})
+		contentBlocks = append(
+			contentBlocks,
+			providers.ContentBlock{Type: "text", Text: skillsText},
+		)
 	}
 
 	if summary != "" {
@@ -568,7 +616,10 @@ func (cb *ContextBuilder) BuildMessages(
 				"for reference only. It may be incomplete or outdated — always defer to explicit instructions.\n\n%s",
 			summary)
 		stringParts = append(stringParts, summaryText)
-		contentBlocks = append(contentBlocks, providers.ContentBlock{Type: "text", Text: summaryText})
+		contentBlocks = append(
+			contentBlocks,
+			providers.ContentBlock{Type: "text", Text: summaryText},
+		)
 	}
 
 	fullSystemPrompt := strings.Join(stringParts, "\n\n---\n\n")
@@ -667,7 +718,11 @@ func sanitizeHistoryForProvider(history []providers.Message) []providers.Message
 		case "assistant":
 			if len(msg.ToolCalls) > 0 {
 				if len(sanitized) == 0 {
-					logger.DebugCF("agent", "Dropping assistant tool-call turn at history start", map[string]any{})
+					logger.DebugCF(
+						"agent",
+						"Dropping assistant tool-call turn at history start",
+						map[string]any{},
+					)
 					continue
 				}
 				prev := sanitized[len(sanitized)-1]

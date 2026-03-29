@@ -335,7 +335,8 @@ func v0ConvertProvidersToModelList(cfg *configV0) []modelConfigV0 {
 			providerNames: []string{"github_copilot", "copilot"},
 			protocol:      "github-copilot",
 			buildConfig: func(p providersConfigV0) (modelConfigV0, bool) {
-				if p.GitHubCopilot.APIKey == "" && p.GitHubCopilot.APIBase == "" && p.GitHubCopilot.ConnectMode == "" {
+				if p.GitHubCopilot.APIKey == "" && p.GitHubCopilot.APIBase == "" &&
+					p.GitHubCopilot.ConnectMode == "" {
 					return modelConfigV0{}, false
 				}
 				return modelConfigV0{

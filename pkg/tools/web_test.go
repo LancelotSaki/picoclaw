@@ -54,7 +54,8 @@ func TestWebTool_WebFetch_Success(t *testing.T) {
 	}
 
 	// ForUser should contain summary
-	if !strings.Contains(result.ForUser, "bytes") && !strings.Contains(result.ForUser, "extractor") {
+	if !strings.Contains(result.ForUser, "bytes") &&
+		!strings.Contains(result.ForUser, "extractor") {
 		t.Errorf("Expected ForUser to contain summary, got: %s", result.ForUser)
 	}
 }
@@ -75,7 +76,11 @@ func TestWebTool_WebFetch_JSON(t *testing.T) {
 
 	tool, err := NewWebFetchTool(50000, format, testFetchLimit)
 	if err != nil {
-		logger.ErrorCF("agent", "Failed to create web fetch tool", map[string]any{"error": err.Error()})
+		logger.ErrorCF(
+			"agent",
+			"Failed to create web fetch tool",
+			map[string]any{"error": err.Error()},
+		)
 	}
 
 	ctx := context.Background()
@@ -100,7 +105,11 @@ func TestWebTool_WebFetch_JSON(t *testing.T) {
 func TestWebTool_WebFetch_InvalidURL(t *testing.T) {
 	tool, err := NewWebFetchTool(50000, format, testFetchLimit)
 	if err != nil {
-		logger.ErrorCF("agent", "Failed to create web fetch tool", map[string]any{"error": err.Error()})
+		logger.ErrorCF(
+			"agent",
+			"Failed to create web fetch tool",
+			map[string]any{"error": err.Error()},
+		)
 	}
 
 	ctx := context.Background()
@@ -125,7 +134,11 @@ func TestWebTool_WebFetch_InvalidURL(t *testing.T) {
 func TestWebTool_WebFetch_UnsupportedScheme(t *testing.T) {
 	tool, err := NewWebFetchTool(50000, format, testFetchLimit)
 	if err != nil {
-		logger.ErrorCF("agent", "Failed to create web fetch tool", map[string]any{"error": err.Error()})
+		logger.ErrorCF(
+			"agent",
+			"Failed to create web fetch tool",
+			map[string]any{"error": err.Error()},
+		)
 	}
 
 	ctx := context.Background()
@@ -141,7 +154,8 @@ func TestWebTool_WebFetch_UnsupportedScheme(t *testing.T) {
 	}
 
 	// Should mention only http/https allowed
-	if !strings.Contains(result.ForLLM, "http/https") && !strings.Contains(result.ForUser, "http/https") {
+	if !strings.Contains(result.ForLLM, "http/https") &&
+		!strings.Contains(result.ForUser, "http/https") {
 		t.Errorf("Expected scheme error message, got ForLLM: %s", result.ForLLM)
 	}
 }
@@ -150,7 +164,11 @@ func TestWebTool_WebFetch_UnsupportedScheme(t *testing.T) {
 func TestWebTool_WebFetch_MissingURL(t *testing.T) {
 	tool, err := NewWebFetchTool(50000, format, testFetchLimit)
 	if err != nil {
-		logger.ErrorCF("agent", "Failed to create web fetch tool", map[string]any{"error": err.Error()})
+		logger.ErrorCF(
+			"agent",
+			"Failed to create web fetch tool",
+			map[string]any{"error": err.Error()},
+		)
 	}
 
 	ctx := context.Background()
@@ -164,7 +182,8 @@ func TestWebTool_WebFetch_MissingURL(t *testing.T) {
 	}
 
 	// Should mention URL is required
-	if !strings.Contains(result.ForLLM, "url is required") && !strings.Contains(result.ForUser, "url is required") {
+	if !strings.Contains(result.ForLLM, "url is required") &&
+		!strings.Contains(result.ForUser, "url is required") {
 		t.Errorf("Expected 'url is required' message, got ForLLM: %s", result.ForLLM)
 	}
 }
@@ -184,7 +203,11 @@ func TestWebTool_WebFetch_Truncation(t *testing.T) {
 
 	tool, err := NewWebFetchTool(1000, format, testFetchLimit) // Limit to 1000 chars
 	if err != nil {
-		logger.ErrorCF("agent", "Failed to create web fetch tool", map[string]any{"error": err.Error()})
+		logger.ErrorCF(
+			"agent",
+			"Failed to create web fetch tool",
+			map[string]any{"error": err.Error()},
+		)
 	}
 
 	ctx := context.Background()
@@ -216,7 +239,10 @@ func TestWebTool_WebFetch_Truncation(t *testing.T) {
 	// Text should end with the truncation notice
 	if text, ok := resultMap["text"].(string); ok {
 		if !strings.HasSuffix(text, "[Content truncated due to size limit]") {
-			t.Errorf("Expected text to end with truncation notice, got: %q", text[max(0, len(text)-60):])
+			t.Errorf(
+				"Expected text to end with truncation notice, got: %q",
+				text[max(0, len(text)-60):],
+			)
 		}
 	}
 }
@@ -263,11 +289,13 @@ func TestWebTool_WebFetch_TruncationNotice(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", tt.contentType)
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(tt.body))
-			}))
+			server := httptest.NewServer(
+				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Type", tt.contentType)
+					w.WriteHeader(http.StatusOK)
+					w.Write([]byte(tt.body))
+				}),
+			)
 			defer server.Close()
 
 			tool, err := NewWebFetchTool(maxChars, tt.format, testFetchLimit)
@@ -291,7 +319,11 @@ func TestWebTool_WebFetch_TruncationNotice(t *testing.T) {
 			}
 
 			if !strings.HasSuffix(text, truncationNotice) {
-				t.Errorf("expected text to end with %q, got suffix: %q", truncationNotice, text[max(0, len(text)-60):])
+				t.Errorf(
+					"expected text to end with %q, got suffix: %q",
+					truncationNotice,
+					text[max(0, len(text)-60):],
+				)
 			}
 
 			if truncated, ok := resultMap["truncated"].(bool); !ok || !truncated {
@@ -360,7 +392,11 @@ func TestWebFetchTool_PayloadTooLarge(t *testing.T) {
 	// Initialize the tool
 	tool, err := NewWebFetchTool(50000, format, testFetchLimit)
 	if err != nil {
-		logger.ErrorCF("agent", "Failed to create web fetch tool", map[string]any{"error": err.Error()})
+		logger.ErrorCF(
+			"agent",
+			"Failed to create web fetch tool",
+			map[string]any{"error": err.Error()},
+		)
 	}
 
 	// Prepare the arguments pointing to the URL of our local mock server
@@ -380,7 +416,8 @@ func TestWebFetchTool_PayloadTooLarge(t *testing.T) {
 	// Search for the exact error string we set earlier in the Execute method
 	expectedErrorMsg := fmt.Sprintf("size exceeded %d bytes limit", testFetchLimit)
 
-	if !strings.Contains(result.ForLLM, expectedErrorMsg) && !strings.Contains(result.ForUser, expectedErrorMsg) {
+	if !strings.Contains(result.ForLLM, expectedErrorMsg) &&
+		!strings.Contains(result.ForUser, expectedErrorMsg) {
 		t.Errorf("test failed: expected error %q, but got: %+v", expectedErrorMsg, result)
 	}
 }
@@ -533,7 +570,11 @@ func TestWebTool_WebFetch_HTMLExtraction(t *testing.T) {
 
 	tool, err := NewWebFetchTool(50000, format, testFetchLimit)
 	if err != nil {
-		logger.ErrorCF("agent", "Failed to create web fetch tool", map[string]any{"error": err.Error()})
+		logger.ErrorCF(
+			"agent",
+			"Failed to create web fetch tool",
+			map[string]any{"error": err.Error()},
+		)
 	}
 
 	ctx := context.Background()
@@ -718,7 +759,13 @@ func TestWebTool_WebFetch_PrivateHostAllowedByCIDRWhitelist(t *testing.T) {
 	defer server.Close()
 
 	host, _ := serverHostAndPort(t, server.URL)
-	tool, err := NewWebFetchToolWithConfig(50000, "", format, testFetchLimit, []string{singleHostCIDR(t, host)})
+	tool, err := NewWebFetchToolWithConfig(
+		50000,
+		"",
+		format,
+		testFetchLimit,
+		[]string{singleHostCIDR(t, host)},
+	)
 	if err != nil {
 		t.Fatalf("Failed to create web fetch tool: %v", err)
 	}
@@ -753,7 +800,10 @@ func TestWebTool_WebFetch_PrivateHostAllowedForTests(t *testing.T) {
 	})
 
 	if result.IsError {
-		t.Errorf("expected success when private host access is allowed in tests, got %q", result.ForLLM)
+		t.Errorf(
+			"expected success when private host access is allowed in tests, got %q",
+			result.ForLLM,
+		)
 	}
 }
 
@@ -973,7 +1023,11 @@ func TestIsPrivateOrRestrictedIP_Table(t *testing.T) {
 func TestWebTool_WebFetch_MissingDomain(t *testing.T) {
 	tool, err := NewWebFetchTool(50000, format, testFetchLimit)
 	if err != nil {
-		logger.ErrorCF("agent", "Failed to create web fetch tool", map[string]any{"error": err.Error()})
+		logger.ErrorCF(
+			"agent",
+			"Failed to create web fetch tool",
+			map[string]any{"error": err.Error()},
+		)
 	}
 
 	ctx := context.Background()
@@ -995,9 +1049,19 @@ func TestWebTool_WebFetch_MissingDomain(t *testing.T) {
 }
 
 func TestNewWebFetchToolWithProxy(t *testing.T) {
-	tool, err := NewWebFetchToolWithProxy(1024, "http://127.0.0.1:7890", format, testFetchLimit, nil)
+	tool, err := NewWebFetchToolWithProxy(
+		1024,
+		"http://127.0.0.1:7890",
+		format,
+		testFetchLimit,
+		nil,
+	)
 	if err != nil {
-		logger.ErrorCF("agent", "Failed to create web fetch tool", map[string]any{"error": err.Error()})
+		logger.ErrorCF(
+			"agent",
+			"Failed to create web fetch tool",
+			map[string]any{"error": err.Error()},
+		)
 	} else if tool.maxChars != 1024 {
 		t.Fatalf("maxChars = %d, want %d", tool.maxChars, 1024)
 	}
@@ -1008,7 +1072,11 @@ func TestNewWebFetchToolWithProxy(t *testing.T) {
 
 	tool, err = NewWebFetchToolWithProxy(0, "http://127.0.0.1:7890", format, testFetchLimit, nil)
 	if err != nil {
-		logger.ErrorCF("agent", "Failed to create web fetch tool", map[string]any{"error": err.Error()})
+		logger.ErrorCF(
+			"agent",
+			"Failed to create web fetch tool",
+			map[string]any{"error": err.Error()},
+		)
 	}
 
 	if tool.maxChars != 50000 {
@@ -1017,7 +1085,13 @@ func TestNewWebFetchToolWithProxy(t *testing.T) {
 }
 
 func TestNewWebFetchToolWithConfig_InvalidPrivateHostWhitelist(t *testing.T) {
-	_, err := NewWebFetchToolWithConfig(1024, "", format, testFetchLimit, []string{"not-an-ip-or-cidr"})
+	_, err := NewWebFetchToolWithConfig(
+		1024,
+		"",
+		format,
+		testFetchLimit,
+		[]string{"not-an-ip-or-cidr"},
+	)
 	if err == nil {
 		t.Fatal("expected invalid whitelist entry to fail")
 	}
@@ -1173,7 +1247,11 @@ func TestWebTool_TavilySearch_RangeMapping(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]any{
 			"results": []map[string]any{
-				{"title": "Recent result", "url": "https://example.com/recent", "content": "snippet"},
+				{
+					"title":   "Recent result",
+					"url":     "https://example.com/recent",
+					"content": "snippet",
+				},
 			},
 		})
 	}))
@@ -1303,7 +1381,10 @@ func TestWebFetchTool_CloudflareChallenge_RetryFailsToo(t *testing.T) {
 
 	// Should not be an error — the retry response is used as-is (403 is a valid HTTP response)
 	if result.IsError {
-		t.Fatalf("expected non-error result even when retry is also blocked, got: %s", result.ForLLM)
+		t.Fatalf(
+			"expected non-error result even when retry is also blocked, got: %s",
+			result.ForLLM,
+		)
 	}
 	// Status in the JSON result should reflect the 403
 	if !strings.Contains(result.ForLLM, "403") {
@@ -1468,7 +1549,10 @@ func TestWebTool_GLMSearch_Success(t *testing.T) {
 			t.Errorf("Expected Content-Type application/json, got %s", r.Header.Get("Content-Type"))
 		}
 		if r.Header.Get("Authorization") != "Bearer test-glm-key" {
-			t.Errorf("Expected Authorization Bearer test-glm-key, got %s", r.Header.Get("Authorization"))
+			t.Errorf(
+				"Expected Authorization Bearer test-glm-key, got %s",
+				r.Header.Get("Authorization"),
+			)
 		}
 
 		var payload map[string]any
@@ -1534,14 +1618,21 @@ func TestWebTool_GLMSearch_RangeMapping(t *testing.T) {
 			t.Fatalf("failed to decode payload: %v", err)
 		}
 		if payload["search_recency_filter"] != "oneMonth" {
-			t.Fatalf("expected search_recency_filter=oneMonth, got %v", payload["search_recency_filter"])
+			t.Fatalf(
+				"expected search_recency_filter=oneMonth, got %v",
+				payload["search_recency_filter"],
+			)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]any{
 			"search_result": []map[string]any{
-				{"title": "Recent GLM Result", "content": "snippet", "link": "https://example.com/glm-range"},
+				{
+					"title":   "Recent GLM Result",
+					"content": "snippet",
+					"link":    "https://example.com/glm-range",
+				},
 			},
 		})
 	}))
@@ -1573,14 +1664,21 @@ func TestWebTool_BaiduSearch_RangeMapping(t *testing.T) {
 			t.Fatalf("failed to decode payload: %v", err)
 		}
 		if payload["search_recency_filter"] != "week" {
-			t.Fatalf("expected search_recency_filter=week for day fallback, got %v", payload["search_recency_filter"])
+			t.Fatalf(
+				"expected search_recency_filter=week for day fallback, got %v",
+				payload["search_recency_filter"],
+			)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]any{
 			"references": []map[string]any{
-				{"title": "Recent Baidu Result", "url": "https://example.com/baidu", "content": "snippet"},
+				{
+					"title":   "Recent Baidu Result",
+					"url":     "https://example.com/baidu",
+					"content": "snippet",
+				},
 			},
 		})
 	}))

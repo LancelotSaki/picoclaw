@@ -215,28 +215,43 @@ func storeInlineDataURL(
 	payload = strings.NewReplacer("\n", "", "\r", "", "\t", "", " ", "").Replace(payload)
 	decoded, err := base64.StdEncoding.DecodeString(payload)
 	if err != nil {
-		return "", fmt.Sprintf("[Tool returned inline media content (%s) that could not be decoded.]", mimeType)
+		return "", fmt.Sprintf(
+			"[Tool returned inline media content (%s) that could not be decoded.]",
+			mimeType,
+		)
 	}
 
 	dir := media.TempDir()
 	if err = os.MkdirAll(dir, 0o700); err != nil {
-		return "", fmt.Sprintf("[Tool returned inline media content (%s) but it could not be stored.]", mimeType)
+		return "", fmt.Sprintf(
+			"[Tool returned inline media content (%s) but it could not be stored.]",
+			mimeType,
+		)
 	}
 
 	ext := extensionForMIMEType(mimeType)
 	tmpFile, err := os.CreateTemp(dir, "tool-inline-*"+ext)
 	if err != nil {
-		return "", fmt.Sprintf("[Tool returned inline media content (%s) but it could not be stored.]", mimeType)
+		return "", fmt.Sprintf(
+			"[Tool returned inline media content (%s) but it could not be stored.]",
+			mimeType,
+		)
 	}
 	tmpPath := tmpFile.Name()
 	if _, err = tmpFile.Write(decoded); err != nil {
 		tmpFile.Close()
 		_ = os.Remove(tmpPath)
-		return "", fmt.Sprintf("[Tool returned inline media content (%s) but it could not be stored.]", mimeType)
+		return "", fmt.Sprintf(
+			"[Tool returned inline media content (%s) but it could not be stored.]",
+			mimeType,
+		)
 	}
 	if err = tmpFile.Close(); err != nil {
 		_ = os.Remove(tmpPath)
-		return "", fmt.Sprintf("[Tool returned inline media content (%s) but it could not be stored.]", mimeType)
+		return "", fmt.Sprintf(
+			"[Tool returned inline media content (%s) but it could not be stored.]",
+			mimeType,
+		)
 	}
 
 	filename := sanitizeIdentifierComponent(toolName) + ext
@@ -255,7 +270,10 @@ func storeInlineDataURL(
 	}, scope)
 	if err != nil {
 		_ = os.Remove(tmpPath)
-		return "", fmt.Sprintf("[Tool returned inline media content (%s) but it could not be registered.]", mimeType)
+		return "", fmt.Sprintf(
+			"[Tool returned inline media content (%s) but it could not be registered.]",
+			mimeType,
+		)
 	}
 
 	return ref, fmt.Sprintf(inlineMediaStoredMessage, mimeType)

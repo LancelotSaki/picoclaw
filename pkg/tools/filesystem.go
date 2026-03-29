@@ -20,7 +20,11 @@ import (
 
 const MaxReadFileSize = 64 * 1024 // 64KB limit to avoid context overflow
 
-func validatePathWithAllowPaths(path, workspace string, restrict bool, patterns []*regexp.Regexp) (string, error) {
+func validatePathWithAllowPaths(
+	path, workspace string,
+	restrict bool,
+	patterns []*regexp.Regexp,
+) (string, error) {
 	if workspace == "" {
 		return path, fmt.Errorf("workspace is not defined")
 	}
@@ -483,7 +487,11 @@ type WriteFileTool struct {
 	fs fileSystem
 }
 
-func NewWriteFileTool(workspace string, restrict bool, allowPaths ...[]*regexp.Regexp) *WriteFileTool {
+func NewWriteFileTool(
+	workspace string,
+	restrict bool,
+	allowPaths ...[]*regexp.Regexp,
+) *WriteFileTool {
 	var patterns []*regexp.Regexp
 	if len(allowPaths) > 0 {
 		patterns = allowPaths[0]
@@ -536,7 +544,9 @@ func (t *WriteFileTool) Execute(ctx context.Context, args map[string]any) *ToolR
 
 	if !overwrite {
 		if _, err := t.fs.Open(path); err == nil {
-			return ErrorResult(fmt.Sprintf("file: %s already exists. Set overwrite=true to replace.", path))
+			return ErrorResult(
+				fmt.Sprintf("file: %s already exists. Set overwrite=true to replace.", path),
+			)
 		}
 	}
 

@@ -156,7 +156,11 @@ func TestNewAgentInstance_ResolveCandidatesFromModelListAlias(t *testing.T) {
 				t.Fatalf("len(Candidates) = %d, want 1", len(agent.Candidates))
 			}
 			if agent.Candidates[0].Provider != tt.wantProvider {
-				t.Fatalf("candidate provider = %q, want %q", agent.Candidates[0].Provider, tt.wantProvider)
+				t.Fatalf(
+					"candidate provider = %q, want %q",
+					agent.Candidates[0].Provider,
+					tt.wantProvider,
+				)
 			}
 			if agent.Candidates[0].Model != tt.wantModel {
 				t.Fatalf("candidate model = %q, want %q", agent.Candidates[0].Model, tt.wantModel)

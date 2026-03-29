@@ -93,7 +93,10 @@ func TestRegexSearchTool_Execute(t *testing.T) {
 		reg.mu.RLock()
 		defer reg.mu.RUnlock()
 		if reg.tools["mcp_read_file"].TTL != 5 {
-			t.Errorf("Expected TTL of 'mcp_read_file' to be promoted to 5, got %d", reg.tools["mcp_read_file"].TTL)
+			t.Errorf(
+				"Expected TTL of 'mcp_read_file' to be promoted to 5, got %d",
+				reg.tools["mcp_read_file"].TTL,
+			)
 		}
 		if reg.tools["mcp_fetch_net"].TTL != 0 {
 			t.Errorf("Expected 'mcp_fetch_net' to NOT be promoted (TTL=0)")

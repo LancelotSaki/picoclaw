@@ -314,7 +314,10 @@ func (t *MCPTool) normalizeResultContent(ctx context.Context, content []mcp.Cont
 	return result
 }
 
-func (t *MCPTool) storeEmbeddedResource(ctx context.Context, content *mcp.EmbeddedResource) (string, string) {
+func (t *MCPTool) storeEmbeddedResource(
+	ctx context.Context,
+	content *mcp.EmbeddedResource,
+) (string, string) {
 	if content == nil || content.Resource == nil {
 		return "", "[MCP returned an embedded resource without data.]"
 	}
@@ -374,23 +377,39 @@ func (t *MCPTool) storeBinaryContent(
 
 	dir := media.TempDir()
 	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return "", fmt.Sprintf("[MCP returned %s content (%s) but it could not be stored.]", kind, mimeType)
+		return "", fmt.Sprintf(
+			"[MCP returned %s content (%s) but it could not be stored.]",
+			kind,
+			mimeType,
+		)
 	}
 
 	ext := extensionForMIMEType(mimeType)
 	tmpFile, err := os.CreateTemp(dir, "mcp-*"+ext)
 	if err != nil {
-		return "", fmt.Sprintf("[MCP returned %s content (%s) but it could not be stored.]", kind, mimeType)
+		return "", fmt.Sprintf(
+			"[MCP returned %s content (%s) but it could not be stored.]",
+			kind,
+			mimeType,
+		)
 	}
 	tmpPath := tmpFile.Name()
 	if _, err = tmpFile.Write(data); err != nil {
 		_ = tmpFile.Close()
 		_ = os.Remove(tmpPath)
-		return "", fmt.Sprintf("[MCP returned %s content (%s) but it could not be stored.]", kind, mimeType)
+		return "", fmt.Sprintf(
+			"[MCP returned %s content (%s) but it could not be stored.]",
+			kind,
+			mimeType,
+		)
 	}
 	if err = tmpFile.Close(); err != nil {
 		_ = os.Remove(tmpPath)
-		return "", fmt.Sprintf("[MCP returned %s content (%s) but it could not be stored.]", kind, mimeType)
+		return "", fmt.Sprintf(
+			"[MCP returned %s content (%s) but it could not be stored.]",
+			kind,
+			mimeType,
+		)
 	}
 
 	scope := fmt.Sprintf(
@@ -470,7 +489,10 @@ func summarizeEmbeddedResource(content *mcp.EmbeddedResource) string {
 			normalizedMIMEType(resource.MIMEType),
 		)
 	}
-	return fmt.Sprintf("[MCP returned embedded resource (%s).]", normalizedMIMEType(resource.MIMEType))
+	return fmt.Sprintf(
+		"[MCP returned embedded resource (%s).]",
+		normalizedMIMEType(resource.MIMEType),
+	)
 }
 
 func annotationsAllowUser(annotations *mcp.Annotations) bool {

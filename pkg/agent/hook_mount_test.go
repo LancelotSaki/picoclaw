@@ -40,7 +40,11 @@ func (h *builtinAutoHook) AfterLLM(
 	return next, HookDecision{Action: HookActionModify}, nil
 }
 
-func newConfiguredHookLoop(t *testing.T, provider *llmHookTestProvider, hooks config.HooksConfig) *AgentLoop {
+func newConfiguredHookLoop(
+	t *testing.T,
+	provider *llmHookTestProvider,
+	hooks config.HooksConfig,
+) *AgentLoop {
 	t.Helper()
 
 	cfg := &config.Config{
@@ -102,7 +106,13 @@ func TestAgentLoop_ProcessDirectWithChannel_AutoMountsBuiltinHook(t *testing.T) 
 	})
 	defer al.Close()
 
-	resp, err := al.ProcessDirectWithChannel(context.Background(), "hello", "session-1", "cli", "direct")
+	resp, err := al.ProcessDirectWithChannel(
+		context.Background(),
+		"hello",
+		"session-1",
+		"cli",
+		"direct",
+	)
 	if err != nil {
 		t.Fatalf("ProcessDirectWithChannel failed: %v", err)
 	}
@@ -140,7 +150,13 @@ func TestAgentLoop_ProcessDirectWithChannel_AutoMountsProcessHook(t *testing.T) 
 	})
 	defer al.Close()
 
-	resp, err := al.ProcessDirectWithChannel(context.Background(), "hello", "session-1", "cli", "direct")
+	resp, err := al.ProcessDirectWithChannel(
+		context.Background(),
+		"hello",
+		"session-1",
+		"cli",
+		"direct",
+	)
 	if err != nil {
 		t.Fatalf("ProcessDirectWithChannel failed: %v", err)
 	}
@@ -172,7 +188,13 @@ func TestAgentLoop_ProcessDirectWithChannel_InvalidConfiguredHookFails(t *testin
 	})
 	defer al.Close()
 
-	_, err := al.ProcessDirectWithChannel(context.Background(), "hello", "session-1", "cli", "direct")
+	_, err := al.ProcessDirectWithChannel(
+		context.Background(),
+		"hello",
+		"session-1",
+		"cli",
+		"direct",
+	)
 	if err == nil {
 		t.Fatal("expected invalid configured hook error")
 	}

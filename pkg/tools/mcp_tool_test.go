@@ -571,7 +571,10 @@ func TestMCPTool_Execute_EmbeddedResourceBlobStoredAsMedia(t *testing.T) {
 	result := mcpTool.Execute(WithToolContext(context.Background(), "telegram", "chat-42"), nil)
 
 	if len(result.Media) != 1 {
-		t.Fatalf("expected embedded resource blob to be stored as media, got %d refs", len(result.Media))
+		t.Fatalf(
+			"expected embedded resource blob to be stored as media, got %d refs",
+			len(result.Media),
+		)
 	}
 	path, _, err := store.ResolveWithMeta(result.Media[0])
 	if err != nil {

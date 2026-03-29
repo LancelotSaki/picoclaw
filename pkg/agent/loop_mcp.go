@@ -65,7 +65,11 @@ func (al *AgentLoop) ensureMCPInitialized(ctx context.Context) error {
 	}
 
 	if al.cfg.Tools.MCP.Servers == nil || len(al.cfg.Tools.MCP.Servers) == 0 {
-		logger.WarnCF("agent", "MCP is enabled but no servers are configured, skipping MCP initialization", nil)
+		logger.WarnCF(
+			"agent",
+			"MCP is enabled but no servers are configured, skipping MCP initialization",
+			nil,
+		)
 		return nil
 	}
 
@@ -76,7 +80,11 @@ func (al *AgentLoop) ensureMCPInitialized(ctx context.Context) error {
 		}
 	}
 	if !findValidServer {
-		logger.WarnCF("agent", "MCP is enabled but no valid servers are configured, skipping MCP initialization", nil)
+		logger.WarnCF(
+			"agent",
+			"MCP is enabled but no valid servers are configured, skipping MCP initialization",
+			nil,
+		)
 		return nil
 	}
 
@@ -193,10 +201,14 @@ func (al *AgentLoop) ensureMCPInitialized(ctx context.Context) error {
 				}
 
 				if useRegex {
-					agent.Tools.Register(tools.NewRegexSearchTool(agent.Tools, ttl, maxSearchResults))
+					agent.Tools.Register(
+						tools.NewRegexSearchTool(agent.Tools, ttl, maxSearchResults),
+					)
 				}
 				if useBM25 {
-					agent.Tools.Register(tools.NewBM25SearchTool(agent.Tools, ttl, maxSearchResults))
+					agent.Tools.Register(
+						tools.NewBM25SearchTool(agent.Tools, ttl, maxSearchResults),
+					)
 				}
 			}
 		}

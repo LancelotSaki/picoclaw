@@ -79,7 +79,11 @@ func TestSendFileTool_FileTooLarge(t *testing.T) {
 func TestSendFileTool_DefaultMaxSize(t *testing.T) {
 	tool := NewSendFileTool("/tmp", false, 0, nil)
 	if tool.maxFileSize != config.DefaultMaxMediaSize {
-		t.Errorf("expected default max size %d, got %d", config.DefaultMaxMediaSize, tool.maxFileSize)
+		t.Errorf(
+			"expected default max size %d, got %d",
+			config.DefaultMaxMediaSize,
+			tool.maxFileSize,
+		)
 	}
 }
 
@@ -162,7 +166,11 @@ func TestSendFileTool_AllowsWhitelistedMediaTempPath(t *testing.T) {
 	t.Cleanup(func() { _ = os.Remove(testPath) })
 
 	pattern := regexp.MustCompile(
-		"^" + regexp.QuoteMeta(filepath.Clean(mediaDir)) + "(?:" + regexp.QuoteMeta(string(os.PathSeparator)) + "|$)",
+		"^" + regexp.QuoteMeta(
+			filepath.Clean(mediaDir),
+		) + "(?:" + regexp.QuoteMeta(
+			string(os.PathSeparator),
+		) + "|$)",
 	)
 
 	store := media.NewFileMediaStore()

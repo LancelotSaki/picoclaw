@@ -42,14 +42,13 @@ PicoClaw salva i dati nel workspace configurato (predefinito: `~/.picoclaw/works
 ├── state/            # Stato persistente (ultimo canale, ecc.)
 ├── cron/             # Database dei job pianificati
 ├── skills/           # Skill personalizzate
-├── AGENTS.md         # Guida al comportamento dell'agent
+├── AGENT.md          # Guida al comportamento dell'agent
 ├── HEARTBEAT.md      # Prompt per task periodici (controllato ogni 30 min)
-├── IDENTITY.md       # Identità dell'agent
 ├── SOUL.md           # Anima dell'agent
 └── USER.md           # Preferenze dell'utente
 ```
 
-> **Nota:** Le modifiche a `AGENTS.md`, `SOUL.md`, `USER.md`, `IDENTITY.md` e `memory/MEMORY.md` vengono rilevate automaticamente a runtime tramite il tracciamento della data di modifica (mtime). **Non è necessario riavviare il gateway** dopo aver modificato questi file — l'agent caricherà il nuovo contenuto alla prossima richiesta.
+> **Nota:** Le modifiche a `AGENT.md`, `SOUL.md`, `USER.md` e `memory/MEMORY.md` vengono rilevate automaticamente a runtime tramite il tracciamento della data di modifica (mtime). **Non è necessario riavviare il gateway** dopo aver modificato questi file — l'agent caricherà il nuovo contenuto alla prossima richiesta.
 
 ### Sorgenti delle Skill
 
@@ -71,6 +70,88 @@ export PICOCLAW_BUILTIN_SKILLS=/path/to/skills
 - Gli adattatori dei canali non consumano più localmente i comandi generici; inoltrano il testo in entrata al percorso bus/agent. Telegram registra ancora automaticamente i comandi supportati all'avvio.
 - Un comando slash sconosciuto (ad esempio `/foo`) viene passato all'elaborazione LLM come se fosse un messaggio dell'utente.
 - Un comando registrato ma non supportato sul canale corrente (ad esempio `/show` su WhatsApp) restituisce un errore esplicito all'utente e interrompe l'elaborazione.
+
+### Allowlist dei Tool per Agent
+
+Puoi limitare un singolo agent a un sottoinsieme di tool runtime con `agents.list[].tools`.
+
+Se `tools` è omesso, l'agent riceve il normale set globale dei tool abilitati. Se `tools` è presente, PicoClaw registra per quell'agent solo i tool elencati.
+
+```json
+{
+  "agents": {
+    "list": [
+      {
+        "id": "research",
+        "name": "Research Agent",
+        "tools": ["read_file", "write_file", "web_search", "web_fetch", "message"]
+      }
+    ]
+  }
+}
+```
+
+Note:
+
+- È una allowlist reale, non un suggerimento per l'LLM.
+- I nomi dei tool fanno match 1:1 con il nome runtime del tool.
+- Se ti serve controllo preciso, usa i nomi runtime effettivi come `web_search`, `web_fetch`, `spawn`, `subagent`, `send_file`.
+- Il campo `available_tools` nella Agent Discovery riflette il risultato filtrato reale.
+
+### Discovery Multi-Agent (Automatica)
+
+Quando esiste più di un agent, PicoClaw inietta automaticamente nel system prompt di ogni agent un registry strutturato dei peer. Non serve una chiamata aggiuntiva a un tool `list_agents`.
+
+Questa discovery serve soprattutto a rendere affidabile la delega tramite `spawn` con `agent_id` esplicito.
+
+Ogni entry include:
+
+| Campo | Significato |
+|-------|-------------|
+| `id` | ID stabile dell'agent |
+| `name` | Nome leggibile dell'agent |
+| `description` | Riassunto breve delle capacità |
+| `model` | Modello attualmente usato da quell'agent |
+| `available_tools` | Tool attualmente visibili a quell'agent |
+| `channels` | Canali instradati verso quell'agent |
+
+Dettagli importanti:
+
+- La sezione include anche l'entry dell'agent corrente, quindi c'è self-awareness.
+- `available_tools` è il campo più importante per delegare bene: l'LLM vede i tool reali del peer, non deve indovinarli dalla sola descrizione.
+- `description` viene presa da `AGENT.md` frontmatter `description` quando presente; altrimenti dal primo paragrafo utile di `AGENT.md`, e in fallback da `SOUL.md`.
+- `name` arriva prima da `agents.list[].name`, poi da `AGENT.md` frontmatter `name`, e in fallback dall'ID dell'agent.
+- `channels` derivano dal routing:
+  - l'agent di default espone i canali abilitati
+  - gli altri agent espongono i canali che hanno un binding esplicito verso di loro
+
+Forma dell'oggetto iniettato:
+
+```json
+{
+  "current_agent_id": "main",
+  "agents": [
+    {
+      "id": "main",
+      "name": "Main Assistant",
+      "description": "Agent generalista per richieste quotidiane.",
+      "model": "gpt-4o-mini",
+      "available_tools": ["read_file", "write_file", "exec", "spawn"],
+      "channels": ["telegram", "discord"]
+    },
+    {
+      "id": "research",
+      "name": "Research Agent",
+      "description": "Specialista per investigazioni e lavoro web.",
+      "model": "claude-sonnet-4.5",
+      "available_tools": ["web_search", "web_fetch", "read_file"],
+      "channels": ["telegram"]
+    }
+  ]
+}
+```
+
+In pratica, un agent generalista può vedere che un peer ha `["web_search", "web_fetch"]` mentre lui ha solo tool locali, e scegliere di delegare a quel peer in modo esplicito invece di andare a tentativi.
 
 ### 🔒 Sandbox di Sicurezza
 

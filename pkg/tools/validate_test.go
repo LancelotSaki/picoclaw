@@ -151,7 +151,10 @@ func TestValidateToolArgs(t *testing.T) {
 			schema: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
-					"color": map[string]any{"type": "string", "enum": []any{"red", "green", "blue"}},
+					"color": map[string]any{
+						"type": "string",
+						"enum": []any{"red", "green", "blue"},
+					},
 				},
 			},
 			args: map[string]any{"color": "red"},
@@ -161,7 +164,10 @@ func TestValidateToolArgs(t *testing.T) {
 			schema: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
-					"color": map[string]any{"type": "string", "enum": []any{"red", "green", "blue"}},
+					"color": map[string]any{
+						"type": "string",
+						"enum": []any{"red", "green", "blue"},
+					},
 				},
 			},
 			args:    map[string]any{"color": "yellow"},
@@ -172,7 +178,10 @@ func TestValidateToolArgs(t *testing.T) {
 			schema: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
-					"color": map[string]any{"type": "string", "enum": []string{"red", "green", "blue"}},
+					"color": map[string]any{
+						"type": "string",
+						"enum": []string{"red", "green", "blue"},
+					},
 				},
 			},
 			args: map[string]any{"color": "green"},
@@ -182,7 +191,10 @@ func TestValidateToolArgs(t *testing.T) {
 			schema: map[string]any{
 				"type": "object",
 				"properties": map[string]any{
-					"color": map[string]any{"type": "string", "enum": []string{"red", "green", "blue"}},
+					"color": map[string]any{
+						"type": "string",
+						"enum": []string{"red", "green", "blue"},
+					},
 				},
 			},
 			args:    map[string]any{"color": "yellow"},
@@ -342,7 +354,11 @@ func TestValidateToolArgs_RegistryIntegration(t *testing.T) {
 	}
 
 	// Extra property — should fail with validation error
-	result = r.Execute(context.Background(), "read_file", map[string]any{"path": "/x", "__inject": true})
+	result = r.Execute(
+		context.Background(),
+		"read_file",
+		map[string]any{"path": "/x", "__inject": true},
+	)
 	if !result.IsError {
 		t.Error("expected validation error for extra property")
 	}

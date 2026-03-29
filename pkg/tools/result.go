@@ -80,7 +80,10 @@ func (tr *ToolResult) ContentForLLM() string {
 		}
 	}
 	if len(tr.ArtifactTags) > 0 {
-		artifactNote := "Local artifact paths: " + strings.Join(tr.ArtifactTags, " ") + "\n" + artifactPathsLLMNote
+		artifactNote := "Local artifact paths: " + strings.Join(
+			tr.ArtifactTags,
+			" ",
+		) + "\n" + artifactPathsLLMNote
 		if content == "" {
 			content = artifactNote
 		} else if !strings.Contains(content, artifactNote) {
