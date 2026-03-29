@@ -269,7 +269,7 @@ Notes:
 - This is an allowlist, not a preference hint.
 - Tool names are matched against the runtime tool name 1:1.
 - Use runtime tool names such as `web_search`, `web_fetch`, `spawn`, `subagent`, `send_file`.
-- `available_tools` in Agent Discovery reflects the filtered runtime result, while `tools` reflects the identity declared in `AGENT.md`.
+- Tool declarations in `AGENT.md` are used by runtime/tooling, but they are not injected into the discovery prompt.
 
 ### Agent Discovery (Automatic)
 
@@ -284,56 +284,34 @@ Each entry includes:
 | `id` | Stable agent id |
 | `name` | Agent identity name from `AGENT.md` frontmatter |
 | `description` | Agent identity description from `AGENT.md` frontmatter |
-| `tools` | Declared tool identity from `AGENT.md` frontmatter |
-| `skills` | Declared skill identity from `AGENT.md` frontmatter |
-| `mcpServers` | Declared MCP server identity from `AGENT.md` frontmatter |
-| `model` | Declared model from `AGENT.md` frontmatter |
-| `available_tools` | Tool names currently visible to that agent |
-| `channels` | Channels that route to that agent |
 
 Important behavior:
 
 - The discovery section includes the current agent's own entry, so the model has self-awareness.
-- `available_tools` is the most important field for delegation. It reflects the tools the target agent can actually use, not just a natural-language description.
-- Identity fields (`name`, `description`, `tools`, `skills`, `mcpServers`, `model`) come from `AGENT.md` frontmatter.
+- Discovery is intentionally lightweight. It gives the model only the identity it needs to choose a peer: `id`, `name`, and `description`.
 - `config.json` remains the infrastructure layer: workspace, default agent selection, routing, and subagent permissions.
-- `channels` come from routing state:
-  - the default agent exposes enabled channels
-  - other agents expose channels that explicitly bind to them through `bindings`
+- `AGENT.md` remains the identity layer. Runtime/tool code can still use its `tools`, `skills`, `mcpServers`, and `model` fields when delegation happens.
 
 Example injected shape:
 
 ```json
 {
-  "current_agent_id": "main",
   "agents": [
     {
       "id": "main",
       "name": "Main Assistant",
-      "description": "Generalist agent for day-to-day requests.",
-      "tools": ["read_file", "write_file", "exec", "spawn"],
-      "skills": ["coordination"],
-      "mcpServers": ["filesystem"],
-      "model": "gpt-4o-mini",
-      "available_tools": ["read_file", "write_file", "exec", "spawn"],
-      "channels": ["telegram", "discord"]
+      "description": "Generalist agent for day-to-day requests."
     },
     {
       "id": "research",
       "name": "Research Agent",
-      "description": "Specialist for long-form investigation and web work.",
-      "tools": ["read_file", "web_search", "web_fetch", "message"],
-      "skills": ["deep-research"],
-      "mcpServers": ["web-index"],
-      "model": "claude-sonnet-4.5",
-      "available_tools": ["web_search", "web_fetch", "read_file"],
-      "channels": ["telegram"]
+      "description": "Specialist for long-form investigation and web work."
     }
   ]
 }
 ```
 
-In practice, this means a generalist agent can see that a peer has `["web_search", "web_fetch"]` while it only has local file tools, and can decide to delegate to that peer instead of guessing.
+In practice, this means a generalist agent can choose a peer based on its role description, then call `spawn` with the peer's `agent_id`. The runtime resolves the rest.
 
 ### 🔒 Security Sandbox
 

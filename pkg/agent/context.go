@@ -22,7 +22,6 @@ import (
 
 type ContextBuilder struct {
 	workspace          string
-	agentID            string
 	skillsLoader       *skills.SkillsLoader
 	memory             *MemoryStore
 	toolDiscoveryBM25  bool
@@ -57,11 +56,6 @@ func (cb *ContextBuilder) WithToolDiscovery(useBM25, useRegex bool) *ContextBuil
 
 func (cb *ContextBuilder) WithSplitOnMarker(enabled bool) *ContextBuilder {
 	cb.splitOnMarker = enabled
-	return cb
-}
-
-func (cb *ContextBuilder) WithAgentIdentity(agentID string) *ContextBuilder {
-	cb.agentID = strings.TrimSpace(agentID)
 	return cb
 }
 
@@ -200,7 +194,7 @@ func (cb *ContextBuilder) buildAgentDiscoveryContext() string {
 	if cb.agentDiscovery == nil {
 		return ""
 	}
-	return formatAgentDiscoverySection(cb.agentID, cb.agentDiscovery(cb.workspace))
+	return formatAgentDiscoverySection(cb.agentDiscovery(cb.workspace))
 }
 
 // BuildSystemPromptWithCache returns the cached system prompt if available

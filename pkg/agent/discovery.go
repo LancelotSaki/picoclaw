@@ -2,23 +2,19 @@ package agent
 
 import (
 	"encoding/json"
-	"fmt"
 	"path/filepath"
-	"reflect"
 	"sort"
 	"strings"
 
-	"github.com/sipeed/picoclaw/pkg/config"
 	"github.com/sipeed/picoclaw/pkg/routing"
 )
 
 // AgentDescriptor is the structured discovery payload injected into each
-// agent's system prompt so the LLM can make concrete delegation decisions.
+// agent's system prompt so the LLM can choose a peer by identity.
 type AgentDescriptor struct {
-	ID string `json:"id"`
-	AgentFrontmatter
-	AvailableTools []string `json:"available_tools"`
-	Channels       []string `json:"channels"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 }
 
 // ListAgents returns structured descriptors for every agent in the current
@@ -81,54 +77,34 @@ func (r *AgentRegistry) GetAgentDescriptor(agentID string) (*AgentDescriptor, bo
 
 func (r *AgentRegistry) buildAgentDescriptorLocked(agent *AgentInstance) AgentDescriptor {
 	definition := loadAgentDefinition(agent.Workspace)
+	name, description := descriptorIdentity(agent.ID, definition)
 
 	return AgentDescriptor{
-		ID:               agent.ID,
-		AgentFrontmatter: descriptorFrontmatter(agent.ID, definition),
-		AvailableTools:   visibleToolNames(agent),
-		Channels:         r.channelsForAgentLocked(agent.ID),
+		ID:          agent.ID,
+		Name:        name,
+		Description: description,
 	}
 }
 
-func visibleToolNames(agent *AgentInstance) []string {
-	if agent == nil || agent.Tools == nil {
-		return []string{}
-	}
-
-	defs := agent.Tools.ToProviderDefs()
-	names := make([]string, 0, len(defs))
-	for _, def := range defs {
-		name := strings.TrimSpace(def.Function.Name)
-		if name == "" {
-			continue
-		}
-		names = append(names, name)
-	}
-	if names == nil {
-		return []string{}
-	}
-	return names
-}
-
-func descriptorFrontmatter(agentID string, definition AgentContextDefinition) AgentFrontmatter {
-	frontmatter := AgentFrontmatter{}
+func descriptorIdentity(agentID string, definition AgentContextDefinition) (string, string) {
+	name := agentID
+	description := ""
 	if definition.Agent != nil {
-		frontmatter = definition.Agent.Frontmatter
-		frontmatter.Tools = append([]string(nil), frontmatter.Tools...)
-		frontmatter.Skills = append([]string(nil), frontmatter.Skills...)
-		frontmatter.MCPServers = append([]string(nil), frontmatter.MCPServers...)
+		if trimmed := strings.TrimSpace(definition.Agent.Frontmatter.Name); trimmed != "" {
+			name = trimmed
+		}
+		if trimmed := strings.TrimSpace(definition.Agent.Frontmatter.Description); trimmed != "" {
+			description = trimmed
+		}
 	}
 
-	if strings.TrimSpace(frontmatter.Name) == "" {
-		frontmatter.Name = agentID
-	}
-	if strings.TrimSpace(frontmatter.Description) == "" &&
+	if description == "" &&
 		definition.Source == AgentDefinitionSourceAgents &&
 		definition.Agent != nil {
-		frontmatter.Description = firstMeaningfulParagraph(definition.Agent.Body)
+		description = firstMeaningfulParagraph(definition.Agent.Body)
 	}
 
-	return frontmatter
+	return name, description
 }
 
 func firstMeaningfulParagraph(content string) string {
@@ -161,85 +137,6 @@ func firstMeaningfulParagraph(content string) string {
 		return strings.Join(parts, " ")
 	}
 	return ""
-}
-
-func (r *AgentRegistry) channelsForAgentLocked(agentID string) []string {
-	channels := make(map[string]struct{})
-	enabled := enabledChannelSet(r.cfg)
-
-	if defaultID := r.defaultAgentIDLocked(); defaultID != "" && defaultID == agentID {
-		for channel := range enabled {
-			channels[channel] = struct{}{}
-		}
-	}
-
-	if r.cfg != nil {
-		for _, binding := range r.cfg.Bindings {
-			if routing.NormalizeAgentID(binding.AgentID) != agentID {
-				continue
-			}
-			channel := strings.ToLower(strings.TrimSpace(binding.Match.Channel))
-			if channel == "" {
-				continue
-			}
-			if _, ok := enabled[channel]; !ok {
-				continue
-			}
-			channels[channel] = struct{}{}
-		}
-	}
-
-	if len(channels) == 0 {
-		return []string{}
-	}
-
-	result := make([]string, 0, len(channels))
-	for channel := range channels {
-		result = append(result, channel)
-	}
-	sort.Strings(result)
-	return result
-}
-
-func enabledChannels(cfg *config.Config) []string {
-	if cfg == nil {
-		return []string{}
-	}
-
-	value := reflect.ValueOf(cfg.Channels)
-	typ := value.Type()
-	enabled := make([]string, 0, typ.NumField())
-	for i := 0; i < typ.NumField(); i++ {
-		fieldValue := value.Field(i)
-		enabledField := fieldValue.FieldByName("Enabled")
-		if !enabledField.IsValid() || enabledField.Kind() != reflect.Bool || !enabledField.Bool() {
-			continue
-		}
-		name := jsonFieldName(typ.Field(i).Tag.Get("json"))
-		if name == "" {
-			continue
-		}
-		enabled = append(enabled, name)
-	}
-	sort.Strings(enabled)
-	return enabled
-}
-
-func enabledChannelSet(cfg *config.Config) map[string]struct{} {
-	channels := enabledChannels(cfg)
-	result := make(map[string]struct{}, len(channels))
-	for _, channel := range channels {
-		result[channel] = struct{}{}
-	}
-	return result
-}
-
-func jsonFieldName(tag string) string {
-	name := strings.TrimSpace(strings.Split(tag, ",")[0])
-	if name == "" || name == "-" {
-		return ""
-	}
-	return name
 }
 
 func (r *AgentRegistry) workspaceForAgentIDLocked(agentID string) string {
@@ -283,17 +180,15 @@ func cleanWorkspacePath(path string) string {
 	return filepath.Clean(path)
 }
 
-func formatAgentDiscoverySection(currentAgentID string, agents []AgentDescriptor) string {
+func formatAgentDiscoverySection(agents []AgentDescriptor) string {
 	if len(agents) <= 1 {
 		return ""
 	}
 
 	payload := struct {
-		CurrentAgentID string            `json:"current_agent_id"`
-		Agents         []AgentDescriptor `json:"agents"`
+		Agents []AgentDescriptor `json:"agents"`
 	}{
-		CurrentAgentID: strings.TrimSpace(currentAgentID),
-		Agents:         agents,
+		Agents: agents,
 	}
 
 	encoded, err := json.MarshalIndent(payload, "", "  ")
@@ -303,17 +198,9 @@ func formatAgentDiscoverySection(currentAgentID string, agents []AgentDescriptor
 
 	var header strings.Builder
 	header.WriteString("# Agent Discovery\n\n")
-	if payload.CurrentAgentID != "" {
-		fmt.Fprintf(
-			&header,
-			"You are agent %q. This registry is authoritative for the current PicoClaw instance and includes your own entry.\n",
-			payload.CurrentAgentID,
-		)
-	} else {
-		header.WriteString("This registry is authoritative for the current PicoClaw instance.\n")
-	}
+	header.WriteString("This registry is authoritative for the current PicoClaw instance.\n")
 	header.WriteString(
-		"Delegate based on available_tools first, then skills, mcpServers, model, channels, and description. Use only agent IDs listed here.\n\n",
+		"Choose a peer based on its description. Use only agent IDs listed here when calling spawn.\n\n",
 	)
 	header.WriteString("```json\n")
 	header.Write(encoded)

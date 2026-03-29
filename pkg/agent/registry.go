@@ -54,11 +54,9 @@ func NewAgentRegistry(
 		}
 	}
 
-	for id, instance := range registry.agents {
+	for _, instance := range registry.agents {
 		if instance.ContextBuilder != nil {
-			instance.ContextBuilder.
-				WithAgentIdentity(id).
-				WithAgentDiscovery(registry.ListAgents)
+			instance.ContextBuilder.WithAgentDiscovery(registry.ListAgents)
 		}
 	}
 

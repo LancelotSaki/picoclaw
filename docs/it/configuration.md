@@ -94,7 +94,7 @@ Note:
 - È una allowlist reale, non un suggerimento per l'LLM.
 - I nomi dei tool fanno match 1:1 con il nome runtime del tool.
 - Se ti serve controllo preciso, usa i nomi runtime effettivi come `web_search`, `web_fetch`, `spawn`, `subagent`, `send_file`.
-- `available_tools` nella Agent Discovery riflette il risultato runtime filtrato, mentre `tools` riflette l'identità dichiarata in `AGENT.md`.
+- Le dichiarazioni dei tool in `AGENT.md` sono usate dal runtime e dai tool, ma non vengono iniettate nel prompt di discovery.
 
 ### Discovery Multi-Agent (Automatica)
 
@@ -109,56 +109,34 @@ Ogni entry include:
 | `id` | ID stabile dell'agent |
 | `name` | Nome identitario da `AGENT.md` frontmatter |
 | `description` | Descrizione identitaria da `AGENT.md` frontmatter |
-| `tools` | Tool dichiarati nel frontmatter di `AGENT.md` |
-| `skills` | Skill dichiarate nel frontmatter di `AGENT.md` |
-| `mcpServers` | Server MCP dichiarati nel frontmatter di `AGENT.md` |
-| `model` | Modello dichiarato nel frontmatter di `AGENT.md` |
-| `available_tools` | Tool attualmente visibili a quell'agent |
-| `channels` | Canali instradati verso quell'agent |
 
 Dettagli importanti:
 
 - La sezione include anche l'entry dell'agent corrente, quindi c'è self-awareness.
-- `available_tools` è il campo più importante per delegare bene: l'LLM vede i tool reali del peer, non deve indovinarli dalla sola descrizione.
-- I campi di identità (`name`, `description`, `tools`, `skills`, `mcpServers`, `model`) arrivano dal frontmatter di `AGENT.md`.
+- La discovery è volutamente leggera. Fornisce al modello solo l'identità necessaria per scegliere un peer: `id`, `name`, `description`.
 - `config.json` resta il layer infrastrutturale: workspace, agent di default, routing e permessi di subagent.
-- `channels` derivano dal routing:
-  - l'agent di default espone i canali abilitati
-  - gli altri agent espongono i canali che hanno un binding esplicito verso di loro
+- `AGENT.md` resta il layer di identità. Il codice runtime e i tool possono comunque usare `tools`, `skills`, `mcpServers` e `model` quando avviene la delega.
 
 Forma dell'oggetto iniettato:
 
 ```json
 {
-  "current_agent_id": "main",
   "agents": [
     {
       "id": "main",
       "name": "Main Assistant",
-      "description": "Agent generalista per richieste quotidiane.",
-      "tools": ["read_file", "write_file", "exec", "spawn"],
-      "skills": ["coordination"],
-      "mcpServers": ["filesystem"],
-      "model": "gpt-4o-mini",
-      "available_tools": ["read_file", "write_file", "exec", "spawn"],
-      "channels": ["telegram", "discord"]
+      "description": "Agent generalista per richieste quotidiane."
     },
     {
       "id": "research",
       "name": "Research Agent",
-      "description": "Specialista per investigazioni e lavoro web.",
-      "tools": ["read_file", "web_search", "web_fetch", "message"],
-      "skills": ["deep-research"],
-      "mcpServers": ["web-index"],
-      "model": "claude-sonnet-4.5",
-      "available_tools": ["web_search", "web_fetch", "read_file"],
-      "channels": ["telegram"]
+      "description": "Specialista per investigazioni e lavoro web."
     }
   ]
 }
 ```
 
-In pratica, un agent generalista può vedere che un peer ha `["web_search", "web_fetch"]` mentre lui ha solo tool locali, e scegliere di delegare a quel peer in modo esplicito invece di andare a tentativi.
+In pratica, un agent generalista sceglie un peer in base alla descrizione del suo ruolo, poi chiama `spawn` con l'`agent_id` del peer. Il runtime risolve il resto.
 
 ### 🔒 Sandbox di Sicurezza
 
