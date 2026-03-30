@@ -93,10 +93,11 @@ export function AppHeader() {
         <SidebarTrigger className="text-muted-foreground hover:bg-accent hover:text-foreground flex h-9 w-9 items-center justify-center rounded-lg sm:hidden [&>svg]:size-5">
           <IconMenu2 />
         </SidebarTrigger>
-        <div className="hidden w-36 shrink-0 items-center sm:flex">
+        <div className="hidden w-72 shrink-0 items-center sm:flex">
           <Link to="/">
-            <img className="w-full" src="/logo_with_text.png" alt="Logo" />
+            <img className="w-full" style={{ background: '#e9f6fb', width: '35px', height: '35px', border: '10px 0' }} src="/sitech-logo.svg" alt="Logo" />
           </Link>
+           <span style={{marginLeft: '10px', color: "#666", fontSize: '18px', fontWeight: 'bolder'}}>智能运维分析平台</span>
         </div>
       </div>
 
