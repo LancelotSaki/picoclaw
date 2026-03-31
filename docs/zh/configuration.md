@@ -31,6 +31,22 @@ PICOCLAW_HOME=/opt/picoclaw picoclaw agent
 PICOCLAW_HOME=/srv/picoclaw PICOCLAW_CONFIG=/srv/picoclaw/main.json picoclaw gateway
 ```
 
+### Gateway 日志等级
+
+`gateway.log_level` 控制 Gateway 的日志详细程度，可在 `config.json` 中配置：
+
+```json
+{
+  "gateway": {
+    "log_level": "warn"
+  }
+}
+```
+
+默认值为 `warn`。支持的值：`debug`、`info`、`warn`、`error`、`fatal`。
+
+也可通过环境变量覆盖：`PICOCLAW_LOG_LEVEL=info`
+
 ### 工作区布局 (Workspace Layout)
 
 PicoClaw 将数据存储在您配置的工作区中（默认：`~/.picoclaw/workspace`）：
@@ -370,22 +386,22 @@ Agent 读取 HEARTBEAT.md
     {
       "model_name": "ark-code-latest",
       "model": "volcengine/ark-code-latest",
-      "api_key": "sk-your-api-key"
+      "api_keys": ["sk-your-api-key"]
     },
     {
       "model_name": "gpt-5.4",
       "model": "openai/gpt-5.4",
-      "api_key": "sk-your-openai-key"
+      "api_keys": ["sk-your-openai-key"]
     },
     {
       "model_name": "claude-sonnet-4.6",
       "model": "anthropic/claude-sonnet-4.6",
-      "api_key": "sk-ant-your-key"
+      "api_keys": ["sk-ant-your-key"]
     },
     {
       "model_name": "glm-4.7",
       "model": "zhipu/glm-4.7",
-      "api_key": "your-zhipu-key"
+      "api_keys": ["your-zhipu-key"]
     }
   ],
   "agents": {
@@ -405,7 +421,7 @@ Agent 读取 HEARTBEAT.md
 {
   "model_name": "gpt-5.4",
   "model": "openai/gpt-5.4",
-  "api_key": "sk-..."
+  "api_keys": ["sk-..."]
 }
 ```
 
@@ -418,7 +434,7 @@ Agent 读取 HEARTBEAT.md
 {
   "model_name": "ark-code-latest",
   "model": "volcengine/ark-code-latest",
-  "api_key": "sk-..."
+  "api_keys": ["sk-..."]
 }
 ```
 
@@ -431,7 +447,7 @@ Agent 读取 HEARTBEAT.md
 {
   "model_name": "glm-4.7",
   "model": "zhipu/glm-4.7",
-  "api_key": "your-key"
+  "api_keys": ["your-key"]
 }
 ```
 
@@ -444,7 +460,7 @@ Agent 读取 HEARTBEAT.md
 {
   "model_name": "deepseek-chat",
   "model": "deepseek/deepseek-chat",
-  "api_key": "sk-..."
+  "api_keys": ["sk-..."]
 }
 ```
 
@@ -457,7 +473,7 @@ Agent 读取 HEARTBEAT.md
 {
   "model_name": "claude-sonnet-4.6",
   "model": "anthropic/claude-sonnet-4.6",
-  "api_key": "sk-ant-your-key"
+  "api_keys": ["sk-ant-your-key"]
 }
 ```
 
@@ -469,7 +485,7 @@ Agent 读取 HEARTBEAT.md
 {
   "model_name": "claude-opus-4-6",
   "model": "anthropic-messages/claude-opus-4-6",
-  "api_key": "sk-ant-your-key",
+  "api_keys": ["sk-ant-your-key"],
   "api_base": "https://api.anthropic.com"
 }
 ```
@@ -498,7 +514,7 @@ Agent 读取 HEARTBEAT.md
   "model_name": "my-custom-model",
   "model": "openai/custom-model",
   "api_base": "https://my-proxy.com/v1",
-  "api_key": "sk-..."
+  "api_keys": ["sk-..."]
 }
 ```
 
@@ -517,13 +533,13 @@ PicoClaw 只剥离最外层的 `litellm/` 前缀再发送请求，因此 `litell
       "model_name": "gpt-5.4",
       "model": "openai/gpt-5.4",
       "api_base": "https://api1.example.com/v1",
-      "api_key": "sk-key1"
+      "api_keys": ["sk-key1"]
     },
     {
       "model_name": "gpt-5.4",
       "model": "openai/gpt-5.4",
       "api_base": "https://api2.example.com/v1",
-      "api_key": "sk-key2"
+      "api_keys": ["sk-key2"]
     }
   ]
 }
@@ -531,7 +547,7 @@ PicoClaw 只剥离最外层的 `litellm/` 前缀再发送请求，因此 `litell
 
 #### 从旧版 `providers` 配置迁移
 
-旧版 `providers` 配置**已废弃**，但仍向后兼容。完整迁移指南见 [docs/migration/model-list-migration.md](../migration/model-list-migration.md)。
+旧版 `providers` 配置**已废弃**，V2 中已移除。现有 V0/V1 配置会自动迁移。完整迁移指南见 [docs/migration/model-list-migration.md](../migration/model-list-migration.md)。
 
 ### Provider 架构
 

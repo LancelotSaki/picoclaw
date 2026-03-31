@@ -164,6 +164,7 @@ export function AppHeader() {
                 variant="destructive"
                 size="icon-sm"
                 className="size-8"
+                data-tour="gateway-button"
                 onClick={handleGatewayToggle}
                 disabled={gwLoading}
                 aria-label={t("header.gateway.action.stop")}
@@ -179,6 +180,7 @@ export function AppHeader() {
               isStarting || isRestarting || isStopping ? "secondary" : "default"
             }
             size="sm"
+            data-tour="gateway-button"
             className={`h-8 gap-2 px-3 ${
               isStopped ? "bg-green-500 text-white hover:bg-green-600" : ""
             }`}
@@ -210,7 +212,13 @@ export function AppHeader() {
         />
 
         {/* Docs Link */}
-        <Button variant="ghost" size="icon" className="size-8" asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-8"
+          data-tour="docs-button"
+          asChild
+        >
           <a href="https://docs.picoclaw.io" target="_blank" rel="noreferrer">
             <IconBook className="size-4.5" />
           </a>
