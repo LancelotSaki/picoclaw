@@ -816,6 +816,8 @@ type ToolsConfig struct {
 	FilterMinLength int                `json:"filter_min_length" yaml:"-"                env:"PICOCLAW_TOOLS_FILTER_MIN_LENGTH"`
 	Web             WebToolsConfig     `json:"web"               yaml:"web,omitempty"`
 	Cron            CronToolsConfig    `json:"cron"              yaml:"-"`
+	Database        ToolConfig         `json:"database"                                                 envPrefix:"PICOCLAW_TOOLS_DATABASE_"`
+	HTTP            ToolConfig         `json:"http"                                                     envPrefix:"PICOCLAW_TOOLS_HTTP_"`
 	Exec            ExecConfig         `json:"exec"              yaml:"-"`
 	Skills          SkillsToolsConfig  `json:"skills"            yaml:"skills,omitempty"`
 	MediaCleanup    MediaCleanupConfig `json:"media_cleanup"     yaml:"-"`
@@ -1244,6 +1246,10 @@ func expandMultiKeyModels(models []*ModelConfig) []*ModelConfig {
 
 func (t *ToolsConfig) IsToolEnabled(name string) bool {
 	switch name {
+	case "database":
+		return t.Database.Enabled
+	case "http":
+		return t.HTTP.Enabled
 	case "web":
 		return t.Web.Enabled
 	case "cron":
