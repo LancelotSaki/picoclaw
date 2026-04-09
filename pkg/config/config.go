@@ -24,25 +24,41 @@ var rrCounter atomic.Uint64
 // CurrentVersion is the latest config schema version
 const CurrentVersion = 2
 
-// Config is the current config structure with version support
+// Config is the current config structure with version support.
 type Config struct {
-	Version   int             `json:"version"            yaml:"-"` // Config schema version for migration
-	Agents    AgentsConfig    `json:"agents"             yaml:"-"`
-	Bindings  []AgentBinding  `json:"bindings,omitempty" yaml:"-"`
-	Session   SessionConfig   `json:"session,omitempty"  yaml:"-"`
-	Channels  ChannelsConfig  `json:"channels"           yaml:"channels"`
-	ModelList SecureModelList `json:"model_list"         yaml:"model_list"` // New model-centric provider configuration
-	Gateway   GatewayConfig   `json:"gateway"            yaml:"-"`
-	Hooks     HooksConfig     `json:"hooks,omitempty"    yaml:"-"`
-	Tools     ToolsConfig     `json:"tools"              yaml:",inline"`
-	Heartbeat HeartbeatConfig `json:"heartbeat"          yaml:"-"`
-	Devices   DevicesConfig   `json:"devices"            yaml:"-"`
-	Voice     VoiceConfig     `json:"voice"              yaml:"-"`
+	Version   int             `json:"version"             yaml:"-"` // Config schema version for migration
+	Isolation IsolationConfig `json:"isolation,omitempty" yaml:"-"`
+	Agents    AgentsConfig    `json:"agents"              yaml:"-"`
+	Bindings  []AgentBinding  `json:"bindings,omitempty"  yaml:"-"`
+	Session   SessionConfig   `json:"session,omitempty"   yaml:"-"`
+	Channels  ChannelsConfig  `json:"channels"            yaml:"channels"`
+	ModelList SecureModelList `json:"model_list"          yaml:"model_list"` // New model-centric provider configuration
+	Gateway   GatewayConfig   `json:"gateway"             yaml:"-"`
+	Hooks     HooksConfig     `json:"hooks,omitempty"     yaml:"-"`
+	Tools     ToolsConfig     `json:"tools"               yaml:",inline"`
+	Heartbeat HeartbeatConfig `json:"heartbeat"           yaml:"-"`
+	Devices   DevicesConfig   `json:"devices"             yaml:"-"`
+	Voice     VoiceConfig     `json:"voice"               yaml:"-"`
 	// BuildInfo contains build-time version information
 	BuildInfo BuildInfo `json:"build_info,omitempty" yaml:"-"`
 
 	// cache for sensitive values and compiled regex (computed once)
 	sensitiveCache *SensitiveDataCache
+}
+
+// IsolationConfig controls subprocess isolation for commands started by PicoClaw.
+// It is applied by the isolation package rather than by sandboxing the main process.
+type IsolationConfig struct {
+	Enabled     bool         `json:"enabled,omitempty"`
+	ExposePaths []ExposePath `json:"expose_paths,omitempty"`
+}
+
+// ExposePath describes a host path that should remain visible inside the isolated
+// child-process environment. This is currently implemented on Linux only.
+type ExposePath struct {
+	Source string `json:"source"`
+	Target string `json:"target,omitempty"`
+	Mode   string `json:"mode"`
 }
 
 // FilterSensitiveData filters sensitive values from content before sending to LLM.
@@ -280,23 +296,24 @@ func (d *AgentDefaults) GetModelName() string {
 }
 
 type ChannelsConfig struct {
-	WhatsApp   WhatsAppConfig   `json:"whatsapp"    yaml:"-"`
-	Telegram   TelegramConfig   `json:"telegram"    yaml:"telegram,omitempty"`
-	Feishu     FeishuConfig     `json:"feishu"      yaml:"feishu,omitempty"`
-	Discord    DiscordConfig    `json:"discord"     yaml:"discord,omitempty"`
-	MaixCam    MaixCamConfig    `json:"maixcam"     yaml:"-"`
-	QQ         QQConfig         `json:"qq"          yaml:"qq,omitempty"`
-	DingTalk   DingTalkConfig   `json:"dingtalk"    yaml:"dingtalk,omitempty"`
-	Slack      SlackConfig      `json:"slack"       yaml:"slack,omitempty"`
-	Matrix     MatrixConfig     `json:"matrix"      yaml:"matrix,omitempty"`
-	LINE       LINEConfig       `json:"line"        yaml:"line,omitempty"`
-	OneBot     OneBotConfig     `json:"onebot"      yaml:"onebot,omitempty"`
-	WeCom      WeComConfig      `json:"wecom"       yaml:"wecom,omitempty"       envPrefix:"PICOCLAW_CHANNELS_WECOM_"`
-	Weixin     WeixinConfig     `json:"weixin"      yaml:"weixin,omitempty"`
-	Pico       PicoConfig       `json:"pico"        yaml:"pico,omitempty"`
-	PicoClient PicoClientConfig `json:"pico_client" yaml:"pico_client,omitempty"`
-	IRC        IRCConfig        `json:"irc"         yaml:"irc,omitempty"`
-	VK         VKConfig         `json:"vk"          yaml:"vk,omitempty"`
+	WhatsApp     WhatsAppConfig     `json:"whatsapp"      yaml:"-"`
+	Telegram     TelegramConfig     `json:"telegram"      yaml:"telegram,omitempty"`
+	Feishu       FeishuConfig       `json:"feishu"        yaml:"feishu,omitempty"`
+	Discord      DiscordConfig      `json:"discord"       yaml:"discord,omitempty"`
+	MaixCam      MaixCamConfig      `json:"maixcam"       yaml:"-"`
+	QQ           QQConfig           `json:"qq"            yaml:"qq,omitempty"`
+	DingTalk     DingTalkConfig     `json:"dingtalk"      yaml:"dingtalk,omitempty"`
+	Slack        SlackConfig        `json:"slack"         yaml:"slack,omitempty"`
+	Matrix       MatrixConfig       `json:"matrix"        yaml:"matrix,omitempty"`
+	LINE         LINEConfig         `json:"line"          yaml:"line,omitempty"`
+	OneBot       OneBotConfig       `json:"onebot"        yaml:"onebot,omitempty"`
+	WeCom        WeComConfig        `json:"wecom"         yaml:"wecom,omitempty"         envPrefix:"PICOCLAW_CHANNELS_WECOM_"`
+	Weixin       WeixinConfig       `json:"weixin"        yaml:"weixin,omitempty"`
+	Pico         PicoConfig         `json:"pico"          yaml:"pico,omitempty"`
+	PicoClient   PicoClientConfig   `json:"pico_client"   yaml:"pico_client,omitempty"`
+	IRC          IRCConfig          `json:"irc"           yaml:"irc,omitempty"`
+	VK           VKConfig           `json:"vk"            yaml:"vk,omitempty"`
+	TeamsWebhook TeamsWebhookConfig `json:"teams_webhook" yaml:"teams_webhook,omitempty"`
 }
 
 // GroupTriggerConfig controls when the bot responds in group chats.
@@ -564,6 +581,19 @@ type VKConfig struct {
 
 func (c *VKConfig) SetToken(token string) {
 	c.Token = *NewSecureString(token)
+}
+
+// TeamsWebhookConfig configures the output-only Microsoft Teams webhook channel.
+// Multiple webhook targets can be configured and selected via ChatID at send time.
+type TeamsWebhookConfig struct {
+	Enabled  bool                          `json:"enabled"  yaml:"-"                  env:"PICOCLAW_CHANNELS_TEAMS_WEBHOOK_ENABLED"`
+	Webhooks map[string]TeamsWebhookTarget `json:"webhooks" yaml:"webhooks,omitempty"`
+}
+
+// TeamsWebhookTarget represents a single Teams webhook destination.
+type TeamsWebhookTarget struct {
+	WebhookURL SecureString `json:"webhook_url,omitzero" yaml:"webhook_url,omitempty"`
+	Title      string       `json:"title,omitempty"      yaml:"-"`
 }
 
 type HeartbeatConfig struct {
