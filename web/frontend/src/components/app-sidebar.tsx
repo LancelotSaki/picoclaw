@@ -67,6 +67,9 @@ const baseNavGroups: Omit<NavGroup, "items">[] = [
   },
 ]
 
+const SHOW_CHANNELS = false // 配置项：控制是否显示频道组
+const SHOW_CREDENTIALS = false // 配置项：控制是否显示凭据项
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const routerState = useRouterState()
   const { i18n, t } = useTranslation()
@@ -110,15 +113,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             icon: IconAtom,
             translateTitle: true,
           },
-          {
+          ...(SHOW_CREDENTIALS ? [{
             title: "navigation.credentials",
             url: "/credentials",
             icon: IconKey,
             translateTitle: true,
-          },
+          }] : []),
         ],
       },
-      {
+      ...(SHOW_CHANNELS ? [{
         label: "navigation.channels_group",
         defaultOpen: true,
         items: channelItems.map((item) => ({
@@ -128,7 +131,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           translateTitle: false,
         })),
         isChannelsGroup: true,
-      },
+      }] : []),
       {
         ...baseNavGroups[2],
         items: [
