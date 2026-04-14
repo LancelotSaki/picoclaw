@@ -1,6 +1,8 @@
 package matrix
 
 import (
+	"path/filepath"
+
 	"github.com/sipeed/picoclaw/pkg/bus"
 	"github.com/sipeed/picoclaw/pkg/channels"
 	"github.com/sipeed/picoclaw/pkg/config"
@@ -33,4 +35,5 @@ func init() {
 			return ch, nil
 		},
 	)
-}}
+}
+

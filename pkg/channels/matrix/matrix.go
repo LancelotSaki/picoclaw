@@ -18,6 +18,7 @@ import (
 	mdhtml "github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
 	"maunium.net/go/mautrix"
+	// "maunium.net/go/mautrix/crypto/cryptohelper"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/id"
 	_ "modernc.org/sqlite"
@@ -186,12 +187,16 @@ type MatrixChannel struct {
 
 	roomKindCache     *roomKindCache
 	localpartMentionR *regexp.Regexp
+
+	// cryptoHelper *cryptohelper.CryptoHelper
+	// cryptoDbPath string
 }
 
 func NewMatrixChannel(
 	bc *config.Channel,
 	cfg *config.MatrixSettings,
 	messageBus *bus.MessageBus,
+	cryptoDatabasePath string,
 ) (*MatrixChannel, error) {
 	homeserver := strings.TrimSpace(cfg.Homeserver)
 	userID := strings.TrimSpace(cfg.UserID)
@@ -240,6 +245,7 @@ func NewMatrixChannel(
 		roomKindCache:     newRoomKindCache(roomKindCacheMaxEntries, roomKindCacheTTL),
 		localpartMentionR: localpartMentionRegexp(matrixLocalpart(client.UserID)),
 		typingMu:          sync.Mutex{},
+		// cryptoDbPath:      cryptoDatabasePath,
 	}, nil
 }
 
