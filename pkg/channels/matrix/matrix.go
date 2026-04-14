@@ -171,9 +171,10 @@ func (s *typingSession) stop() {
 // MatrixChannel implements the Channel interface for Matrix.
 type MatrixChannel struct {
 	*channels.BaseChannel
+	bc *config.Channel
 
 	client *mautrix.Client
-	config config.MatrixConfig
+	config *config.MatrixSettings
 	syncer *mautrix.DefaultSyncer
 
 	ctx       context.Context
@@ -188,7 +189,8 @@ type MatrixChannel struct {
 }
 
 func NewMatrixChannel(
-	cfg config.MatrixConfig,
+	bc *config.Channel,
+	cfg *config.MatrixSettings,
 	messageBus *bus.MessageBus,
 ) (*MatrixChannel, error) {
 	homeserver := strings.TrimSpace(cfg.Homeserver)
@@ -221,14 +223,15 @@ func NewMatrixChannel(
 		"matrix",
 		cfg,
 		messageBus,
-		cfg.AllowFrom,
+		bc.AllowFrom,
 		channels.WithMaxMessageLength(65536),
-		channels.WithGroupTrigger(cfg.GroupTrigger),
-		channels.WithReasoningChannelID(cfg.ReasoningChannelID),
+		channels.WithGroupTrigger(bc.GroupTrigger),
+		channels.WithReasoningChannelID(bc.ReasoningChannelID),
 	)
 
 	return &MatrixChannel{
 		BaseChannel:       base,
+		bc:                bc,
 		client:            client,
 		config:            cfg,
 		syncer:            syncer,
@@ -474,7 +477,7 @@ func (c *MatrixChannel) StartTyping(ctx context.Context, chatID string) (func(),
 
 // SendPlaceholder implements channels.PlaceholderCapable.
 func (c *MatrixChannel) SendPlaceholder(ctx context.Context, chatID string) (string, error) {
-	if !c.config.Placeholder.Enabled {
+	if !c.bc.Placeholder.Enabled {
 		return "", nil
 	}
 
@@ -483,7 +486,7 @@ func (c *MatrixChannel) SendPlaceholder(ctx context.Context, chatID string) (str
 		return "", fmt.Errorf("matrix room ID is empty")
 	}
 
-	text := c.config.Placeholder.GetRandomText()
+	text := c.bc.Placeholder.GetRandomText()
 
 	resp, err := c.client.SendMessageEvent(ctx, roomID, event.EventMessage, &event.MessageEventContent{
 		MsgType: event.MsgNotice,
@@ -614,8 +617,8 @@ func (c *MatrixChannel) handleMessageEvent(ctx context.Context, evt *event.Event
 			logger.DebugCF("matrix", "Ignoring group message by trigger rules", map[string]any{
 				"room_id":      roomID,
 				"is_mentioned": isMentioned,
-				"mention_only": c.config.GroupTrigger.MentionOnly,
-				"prefixes":     c.config.GroupTrigger.Prefixes,
+				"mention_only": c.bc.GroupTrigger.MentionOnly,
+				"prefixes":     c.bc.GroupTrigger.Prefixes,
 			})
 			return
 		}
