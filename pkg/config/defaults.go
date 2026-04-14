@@ -41,9 +41,8 @@ func DefaultConfig() *Config {
 				SplitOnMarker: false,
 			},
 		},
-		Bindings: []AgentBinding{},
 		Session: SessionConfig{
-			DMScope: "per-channel-peer",
+			Dimensions: []string{"chat"},
 		},
 		Channels: defaultChannels(),
 		Hooks: HooksConfig{
@@ -342,9 +341,17 @@ func DefaultConfig() *Config {
 					Enabled: true,
 				},
 				Registries: SkillsRegistriesConfig{
-					ClawHub: ClawHubRegistryConfig{
+					&SkillRegistryConfig{
+						Name:    "clawhub",
 						Enabled: true,
 						BaseURL: "https://clawhub.ai",
+						Param:   map[string]any{},
+					},
+					&SkillRegistryConfig{
+						Name:    "github",
+						Enabled: true,
+						BaseURL: "https://github.com",
+						Param:   map[string]any{},
 					},
 				},
 				MaxConcurrentSearches: 2,
@@ -428,7 +435,9 @@ func DefaultConfig() *Config {
 		},
 		Voice: VoiceConfig{
 			ModelName:         "",
+			TTSModelName:      "",
 			EchoTranscription: false,
+			ElevenLabsAPIKey:  "",
 		},
 		BuildInfo: BuildInfo{
 			Version:   Version,
