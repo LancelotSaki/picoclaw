@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -2063,5 +2066,152 @@ func TestSubTurn_IndependentContext(t *testing.T) {
 		}
 	} else {
 		t.Log("✓ SubTurn completed successfully (independent context)")
+	}
+}
+
+// ====================== TargetAgentID Tests ======================
+
+// newMultiAgentLoop creates an AgentLoop with two named agents for testing
+// cross-agent delegation via TargetAgentID.
+func newMultiAgentLoop(t *testing.T) (*AgentLoop, func()) {
+	t.Helper()
+	tmpDir, err := os.MkdirTemp("", "multiagent-test-*")
+	if err != nil {
+		t.Fatalf("create temp dir: %v", err)
+	}
+
+	alphaDir := filepath.Join(tmpDir, "alpha")
+	betaDir := filepath.Join(tmpDir, "beta")
+	os.MkdirAll(alphaDir, 0o755)
+	os.MkdirAll(betaDir, 0o755)
+
+	cfg := &config.Config{
+		Agents: config.AgentsConfig{
+			Defaults: config.AgentDefaults{
+				Workspace:         tmpDir,
+				ModelName:         "default-model",
+				MaxTokens:         4096,
+				MaxToolIterations: 10,
+			},
+			List: []config.AgentConfig{
+				{
+					ID:        "alpha",
+					Workspace: alphaDir,
+					Model:     &config.AgentModelConfig{Primary: "model-alpha"},
+				},
+				{
+					ID:        "beta",
+					Workspace: betaDir,
+					Model:     &config.AgentModelConfig{Primary: "model-beta"},
+				},
+			},
+		},
+	}
+
+	msgBus := bus.NewMessageBus()
+	provider := &mockProvider{}
+	al := NewAgentLoop(cfg, msgBus, provider)
+
+	return al, func() { os.RemoveAll(tmpDir) }
+}
+
+func TestSpawnSubTurn_TargetAgentID_UsesTargetAgent(t *testing.T) {
+	al, cleanup := newMultiAgentLoop(t)
+	defer cleanup()
+
+	alphaAgent, ok := al.registry.GetAgent("alpha")
+	if !ok {
+		t.Fatal("alpha agent not in registry")
+	}
+	betaAgent, ok := al.registry.GetAgent("beta")
+	if !ok {
+		t.Fatal("beta agent not in registry")
+	}
+
+	// Parent is alpha, target is beta
+	parent := &turnState{
+		ctx:            context.Background(),
+		turnID:         "parent-alpha",
+		depth:          0,
+		childTurnIDs:   []string{},
+		pendingResults: make(chan *tools.ToolResult, 4),
+		concurrencySem: make(chan struct{}, testMaxConcurrentSubTurns),
+		session:        &ephemeralSessionStore{},
+		agent:          alphaAgent,
+	}
+
+	result, err := spawnSubTurn(context.Background(), al, parent, SubTurnConfig{
+		TargetAgentID: "beta",
+		SystemPrompt:  "task for beta",
+	})
+	if err != nil {
+		t.Fatalf("spawnSubTurn failed: %v", err)
+	}
+	if result == nil {
+		t.Fatal("expected non-nil result")
+	}
+
+	// Verify the two agents have distinct models (test setup sanity check)
+	if alphaAgent.Model == betaAgent.Model {
+		t.Fatal("test setup error: alpha and beta should have different models")
+	}
+}
+
+func TestSpawnSubTurn_TargetAgentID_NotFound(t *testing.T) {
+	al, cleanup := newMultiAgentLoop(t)
+	defer cleanup()
+
+	alphaAgent, _ := al.registry.GetAgent("alpha")
+	parent := &turnState{
+		ctx:            context.Background(),
+		turnID:         "parent-alpha",
+		depth:          0,
+		childTurnIDs:   []string{},
+		pendingResults: make(chan *tools.ToolResult, 4),
+		concurrencySem: make(chan struct{}, testMaxConcurrentSubTurns),
+		session:        &ephemeralSessionStore{},
+		agent:          alphaAgent,
+	}
+
+	_, err := spawnSubTurn(context.Background(), al, parent, SubTurnConfig{
+		TargetAgentID: "nonexistent",
+		SystemPrompt:  "task",
+	})
+
+	if err == nil {
+		t.Fatal("expected error for nonexistent agent")
+	}
+	if !strings.Contains(err.Error(), "not found") {
+		t.Errorf("error should mention 'not found', got: %v", err)
+	}
+}
+
+func TestSpawnSubTurn_TargetAgentID_EmptyModelAccepted(t *testing.T) {
+	al, cleanup := newMultiAgentLoop(t)
+	defer cleanup()
+
+	alphaAgent, _ := al.registry.GetAgent("alpha")
+	parent := &turnState{
+		ctx:            context.Background(),
+		turnID:         "parent-alpha",
+		depth:          0,
+		childTurnIDs:   []string{},
+		pendingResults: make(chan *tools.ToolResult, 4),
+		concurrencySem: make(chan struct{}, testMaxConcurrentSubTurns),
+		session:        &ephemeralSessionStore{},
+		agent:          alphaAgent,
+	}
+
+	// Model is empty but TargetAgentID is set — should NOT fail validation
+	result, err := spawnSubTurn(context.Background(), al, parent, SubTurnConfig{
+		Model:         "", // intentionally empty
+		TargetAgentID: "beta",
+		SystemPrompt:  "task for beta",
+	})
+	if err != nil {
+		t.Fatalf("should accept empty Model when TargetAgentID is set, got: %v", err)
+	}
+	if result == nil {
+		t.Fatal("expected non-nil result")
 	}
 }
