@@ -1138,6 +1138,8 @@ func LoadConfig(path string) (*Config, error) {
 
 	applyLegacyBindingsMigration(data, cfg)
 
+	gatewayHostBeforeEnv := cfg.Gateway.Host
+
 	if err = env.Parse(cfg); err != nil {
 		return nil, err
 	}
@@ -1145,6 +1147,10 @@ func LoadConfig(path string) (*Config, error) {
 
 	if err = InitChannelList(cfg.Channels); err != nil {
 		return nil, err
+	}
+	cfg.Gateway.Host, err = resolveGatewayHostFromEnv(gatewayHostBeforeEnv)
+	if err != nil {
+		return nil, fmt.Errorf("invalid gateway host: %w", err)
 	}
 
 	// Expand multi-key configs into separate entries for key-level failover
