@@ -46,12 +46,6 @@ export function ChatComposer({
     ? t("chat.placeholder")
     : t(`chat.disabledPlaceholder.${inputDisabledReason}`)
 
-  const inputDisabledReason = (() => {
-    if (!isConnected) return t("chat.inputDisabled.notConnected")
-    if (!hasDefaultModel) return t("chat.inputDisabled.noModel")
-    return null
-  })()
-
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.nativeEvent.isComposing) return
     if (e.key === "Enter" && !e.shiftKey) {
