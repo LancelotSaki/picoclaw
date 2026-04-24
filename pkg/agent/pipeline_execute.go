@@ -81,13 +81,18 @@ toolLoop:
 					)
 
 					if shouldPublishToolFeedback(al.cfg, ts) {
+						toolFeedbackMaxLen := al.cfg.Agents.Defaults.GetToolFeedbackMaxArgsLength()
 						toolFeedbackExplanation := toolFeedbackExplanationForToolCall(
 							exec.response,
 							tc,
 							messages,
-							al.cfg.Agents.Defaults.GetToolFeedbackMaxArgsLength(),
+							toolFeedbackMaxLen,
 						)
-						feedbackMsg := utils.FormatToolFeedbackMessage(toolName, toolFeedbackExplanation)
+						feedbackMsg := utils.FormatToolFeedbackMessage(
+							toolName,
+							toolFeedbackExplanation,
+							toolFeedbackArgsPreview(toolArgs, toolFeedbackMaxLen),
+						)
 						fbCtx, fbCancel := context.WithTimeout(turnCtx, 3*time.Second)
 						_ = al.bus.PublishOutbound(fbCtx, outboundMessageForTurnWithKind(ts, feedbackMsg, messageKindToolFeedback))
 						fbCancel()
@@ -358,13 +363,18 @@ toolLoop:
 		)
 
 		if shouldPublishToolFeedback(al.cfg, ts) {
+			toolFeedbackMaxLen := al.cfg.Agents.Defaults.GetToolFeedbackMaxArgsLength()
 			toolFeedbackExplanation := toolFeedbackExplanationForToolCall(
 				exec.response,
 				tc,
 				messages,
-				al.cfg.Agents.Defaults.GetToolFeedbackMaxArgsLength(),
+				toolFeedbackMaxLen,
 			)
-			feedbackMsg := utils.FormatToolFeedbackMessage(toolName, toolFeedbackExplanation)
+			feedbackMsg := utils.FormatToolFeedbackMessage(
+				toolName,
+				toolFeedbackExplanation,
+				toolFeedbackArgsPreview(toolArgs, toolFeedbackMaxLen),
+			)
 			fbCtx, fbCancel := context.WithTimeout(turnCtx, 3*time.Second)
 			_ = al.bus.PublishOutbound(fbCtx, outboundMessageForTurnWithKind(ts, feedbackMsg, messageKindToolFeedback))
 			fbCancel()
