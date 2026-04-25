@@ -39,7 +39,7 @@ func DefaultConfig() *Config {
 					MaxArgsLength:     300,
 					SeparateMessages:  false,
 					PrettyPrint:       true,
-					DisableEscapeHTML:  true,
+					DisableEscapeHTML: true,
 				},
 				SplitOnMarker: false,
 			},
