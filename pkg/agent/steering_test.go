@@ -1392,6 +1392,149 @@ func TestAgentLoop_InterruptHard_RestoresSession(t *testing.T) {
 	}
 }
 
+func TestAgentLoop_StopCommand_AbortsActiveTurnAndClearsQueuedSteering(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "agent-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	cfg := &config.Config{
+		Agents: config.AgentsConfig{
+			Defaults: config.AgentDefaults{
+				Workspace:         tmpDir,
+				ModelName:         "test-model",
+				MaxTokens:         4096,
+				MaxToolIterations: 10,
+			},
+		},
+	}
+
+	msgBus := bus.NewMessageBus()
+	provider := &toolCallProvider{
+		toolCalls: []providers.ToolCall{
+			{
+				ID:   "call_1",
+				Type: "function",
+				Name: "cancel_tool",
+				Function: &providers.FunctionCall{
+					Name:      "cancel_tool",
+					Arguments: "{}",
+				},
+				Arguments: map[string]any{},
+			},
+		},
+		finalResp: "should not continue",
+	}
+
+	al := NewAgentLoop(cfg, msgBus, provider)
+	started := make(chan struct{})
+	al.RegisterTool(&interruptibleTool{name: "cancel_tool", started: started})
+	sessionKey := session.BuildMainSessionKey(routing.DefaultAgentID)
+
+	runCtx, cancelRun := context.WithCancel(context.Background())
+	defer cancelRun()
+
+	runErrCh := make(chan error, 1)
+	go func() {
+		runErrCh <- al.Run(runCtx)
+	}()
+	defer func() {
+		cancelRun()
+		select {
+		case err := <-runErrCh:
+			if err != nil {
+				t.Fatalf("Run() error = %v", err)
+			}
+		case <-time.After(2 * time.Second):
+			t.Fatal("timeout waiting for Run to stop")
+		}
+	}()
+
+	baseMsg := testInboundMessage(bus.InboundMessage{
+		Context: bus.InboundContext{
+			Channel:  "test",
+			ChatID:   "chat1",
+			ChatType: "direct",
+			SenderID: "user1",
+		},
+		SessionKey: sessionKey,
+	})
+
+	if err := msgBus.PublishInbound(context.Background(), bus.InboundMessage{
+		Context:    baseMsg.Context,
+		Content:    "do work",
+		SessionKey: sessionKey,
+	}); err != nil {
+		t.Fatalf("PublishInbound(start) error = %v", err)
+	}
+
+	select {
+	case <-started:
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for interruptible tool to start")
+	}
+
+	if err := msgBus.PublishInbound(context.Background(), bus.InboundMessage{
+		Context:    baseMsg.Context,
+		Content:    "follow up after cancel",
+		SessionKey: sessionKey,
+	}); err != nil {
+		t.Fatalf("PublishInbound(follow-up) error = %v", err)
+	}
+
+	deadline := time.Now().Add(2 * time.Second)
+	for al.pendingSteeringCountForScope(sessionKey) == 0 {
+		if time.Now().After(deadline) {
+			t.Fatal("timeout waiting for follow-up message to enter steering queue")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	if err := msgBus.PublishInbound(context.Background(), bus.InboundMessage{
+		Context:    baseMsg.Context,
+		Content:    "/stop",
+		SessionKey: sessionKey,
+	}); err != nil {
+		t.Fatalf("PublishInbound(/stop) error = %v", err)
+	}
+
+	select {
+	case outbound := <-msgBus.OutboundChan():
+		want := "⏹️ Task stopped. \"do work\" was canceled."
+		if outbound.Content != want {
+			t.Fatalf("stop reply = %q, want %q", outbound.Content, want)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for /stop reply")
+	}
+
+	deadline = time.Now().Add(5 * time.Second)
+	for al.GetActiveTurnBySession(sessionKey) != nil {
+		if time.Now().After(deadline) {
+			t.Fatal("timeout waiting for active turn to stop")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	if got := al.pendingSteeringCountForScope(sessionKey); got != 0 {
+		t.Fatalf("expected cleared steering queue, got %d pending message(s)", got)
+	}
+
+	select {
+	case outbound := <-msgBus.OutboundChan():
+		t.Fatalf("unexpected outbound after stop: %q", outbound.Content)
+	case <-time.After(300 * time.Millisecond):
+	}
+
+	provider.mu.Lock()
+	calls := provider.calls
+	provider.mu.Unlock()
+	if calls != 1 {
+		t.Fatalf("expected provider to stop before follow-up turn, got %d calls", calls)
+	}
+}
+
 // capturingMockProvider captures messages sent to Chat for inspection.
 type capturingMockProvider struct {
 	response  string
