@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	pahomqtt "github.com/eclipse/paho.mqtt.golang"
@@ -86,9 +87,13 @@ func (c *MQTTChannel) Start(ctx context.Context) error {
 		opts.SetPassword(c.cfg.Password.String())
 	}
 
+	firstSubscribe := make(chan error, 1)
+	var once sync.Once
+
 	opts.SetOnConnectHandler(func(client pahomqtt.Client) {
 		logger.InfoC("mqtt", "MQTT connected, subscribing to inbound topic")
-		c.subscribe(client)
+		err := c.subscribe(client)
+		once.Do(func() { firstSubscribe <- err })
 	})
 
 	opts.SetConnectionLostHandler(func(_ pahomqtt.Client, err error) {
@@ -98,10 +103,17 @@ func (c *MQTTChannel) Start(ctx context.Context) error {
 	client := pahomqtt.NewClient(opts)
 	token := client.Connect()
 	if !token.WaitTimeout(10 * time.Second) {
+		client.Disconnect(250)
 		return fmt.Errorf("mqtt connect timed out after 10s (broker: %s)", c.cfg.Broker)
 	}
 	if err := token.Error(); err != nil {
+		client.Disconnect(250)
 		return fmt.Errorf("mqtt connect failed: %w", err)
+	}
+
+	if err := <-firstSubscribe; err != nil {
+		client.Disconnect(250)
+		return fmt.Errorf("mqtt subscribe failed: %w", err)
 	}
 
 	c.client = client
@@ -144,7 +156,7 @@ func (c *MQTTChannel) clientIDFromTopic(topic string) (string, bool) {
 }
 
 // subscribe subscribes to the inbound topic for this agent.
-func (c *MQTTChannel) subscribe(client pahomqtt.Client) {
+func (c *MQTTChannel) subscribe(client pahomqtt.Client) error {
 	topic := fmt.Sprintf("%s/%s/+/request", c.topicPrefix(), c.cfg.AgentID)
 	token := client.Subscribe(topic, c.qos, func(_ pahomqtt.Client, msg pahomqtt.Message) {
 		c.handleInbound(msg)
@@ -155,9 +167,10 @@ func (c *MQTTChannel) subscribe(client pahomqtt.Client) {
 			"topic": topic,
 			"error": err.Error(),
 		})
-	} else {
-		logger.InfoCF("mqtt", "Subscribed to inbound topic", map[string]any{"topic": topic})
+		return err
 	}
+	logger.InfoCF("mqtt", "Subscribed to inbound topic", map[string]any{"topic": topic})
+	return nil
 }
 
 // handleInbound processes an inbound MQTT message.
