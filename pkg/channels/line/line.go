@@ -231,6 +231,10 @@ func (c *LINEChannel) processEvent(event webhook.EventInterface) {
 		}
 	case webhook.ImageMessageContent:
 		messageID = msg.Id
+		if msg.QuoteToken != "" {
+			quoteToken = msg.QuoteToken
+			c.quoteTokens.Store(chatID, msg.QuoteToken)
+		}
 		if localPath := c.downloadContent(msg.Id, "image.jpg"); localPath != "" {
 			scope := channels.BuildMediaScope("line", chatID, msg.Id)
 			mediaPaths = append(mediaPaths, storeMedia(localPath, "image.jpg", scope))
@@ -245,6 +249,10 @@ func (c *LINEChannel) processEvent(event webhook.EventInterface) {
 		}
 	case webhook.VideoMessageContent:
 		messageID = msg.Id
+		if msg.QuoteToken != "" {
+			quoteToken = msg.QuoteToken
+			c.quoteTokens.Store(chatID, msg.QuoteToken)
+		}
 		if localPath := c.downloadContent(msg.Id, "video.mp4"); localPath != "" {
 			scope := channels.BuildMediaScope("line", chatID, msg.Id)
 			mediaPaths = append(mediaPaths, storeMedia(localPath, "video.mp4", scope))
@@ -253,8 +261,18 @@ func (c *LINEChannel) processEvent(event webhook.EventInterface) {
 	case webhook.FileMessageContent:
 		messageID = msg.Id
 		content = "[file]"
+	case webhook.LocationMessageContent:
+		messageID = msg.Id
+		content = "[location]"
+		if msg.Title != "" {
+			content = fmt.Sprintf("[location: %s]", msg.Title)
+		}
 	case webhook.StickerMessageContent:
 		messageID = msg.Id
+		if msg.QuoteToken != "" {
+			quoteToken = msg.QuoteToken
+			c.quoteTokens.Store(chatID, msg.QuoteToken)
+		}
 		content = "[sticker]"
 	default:
 		logger.DebugCF("line", "Ignoring unsupported message type", map[string]any{
