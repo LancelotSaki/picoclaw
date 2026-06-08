@@ -907,6 +907,29 @@ func TestDefaultConfig_WorkspacePath(t *testing.T) {
 	}
 }
 
+// TestDefaultConfig_AnthropicModelsUseClaudeAPIIDs verifies that first-party
+// Anthropic defaults use Claude API model IDs, not dotted display names or
+// Bedrock-style provider prefixes. See:
+// https://platform.claude.com/docs/en/about-claude/models/model-ids-and-versions
+func TestDefaultConfig_AnthropicModelsUseClaudeAPIIDs(t *testing.T) {
+	cfg := DefaultConfig()
+
+	checked := 0
+	for _, model := range cfg.ModelList {
+		if model.Provider != "anthropic" {
+			continue
+		}
+		checked++
+		if strings.Contains(model.Model, ".") {
+			t.Fatalf("Anthropic default model %q uses dotted ID %q", model.ModelName, model.Model)
+		}
+	}
+
+	if checked == 0 {
+		t.Fatal("DefaultConfig() missing Anthropic models")
+	}
+}
+
 // TestDefaultConfig_MaxTokens verifies max tokens has default value
 func TestDefaultConfig_MaxTokens(t *testing.T) {
 	cfg := DefaultConfig()
@@ -1477,6 +1500,16 @@ func TestLoadConfig_LoadImageCanBeDisabled(t *testing.T) {
 	}
 	if cfg.Tools.IsToolEnabled("load_image") {
 		t.Fatal("LoadConfig().Tools.IsToolEnabled(load_image) should be false")
+	}
+}
+
+func TestDefaultConfig_MessageMediaDisabled(t *testing.T) {
+	cfg := DefaultConfig()
+	if !cfg.Tools.Message.Enabled {
+		t.Fatal("DefaultConfig().Tools.Message.Enabled should be true")
+	}
+	if cfg.Tools.Message.MediaEnabled {
+		t.Fatal("DefaultConfig().Tools.Message.MediaEnabled should be false")
 	}
 }
 
