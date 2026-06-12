@@ -21,6 +21,7 @@ import (
 	"github.com/sipeed/picoclaw/pkg/config"
 	"github.com/sipeed/picoclaw/pkg/constants"
 	"github.com/sipeed/picoclaw/pkg/isolation"
+	"github.com/sipeed/picoclaw/pkg/logger"
 )
 
 var (
@@ -162,7 +163,9 @@ func NewExecToolWithConfig(
 				denyPatterns = append(denyPatterns, windowsDenyPatterns...)
 			}
 			if len(execConfig.CustomDenyPatterns) > 0 {
-				fmt.Printf("Using custom deny patterns: %v\n", execConfig.CustomDenyPatterns)
+				logger.InfoCF("tools", "using custom deny patterns", map[string]any{
+					"patterns": execConfig.CustomDenyPatterns,
+				})
 				for _, pattern := range execConfig.CustomDenyPatterns {
 					re, err := regexp.Compile(pattern)
 					if err != nil {
@@ -173,7 +176,7 @@ func NewExecToolWithConfig(
 			}
 		} else {
 			// If deny patterns are disabled, we won't add any patterns, allowing all commands.
-			fmt.Println("Warning: deny patterns are disabled. All commands will be allowed.")
+			logger.WarnCF("tools", "deny patterns are disabled, all commands will be allowed", nil)
 		}
 		for _, pattern := range execConfig.CustomAllowPatterns {
 			re, err := regexp.Compile(pattern)
@@ -1198,7 +1201,7 @@ func (t *ExecTool) guardCommand(command, cwd string) string {
 				}
 			}
 
-			p, err := filepath.Abs(raw)
+			p, err := commandPathAbs(commandPathTextFromMatch(cmd, loc[0], loc[1]), cwdPath)
 			if err != nil {
 				continue
 			}
@@ -1238,6 +1241,66 @@ func (t *ExecTool) guardCommand(command, cwd string) string {
 	}
 
 	return ""
+}
+
+func commandPathAbs(pathText, cwdPath string) (string, error) {
+	if filepath.IsAbs(pathText) {
+		return filepath.Abs(pathText)
+	}
+	return filepath.Abs(filepath.Join(cwdPath, pathText))
+}
+
+func commandPathTextFromMatch(cmd string, start, end int) string {
+	raw := cmd[start:end]
+	if !strings.HasPrefix(raw, "/") || isUnixAbsolutePathMatchStart(cmd, start) {
+		return raw
+	}
+
+	tokenStart, tokenEnd := shellTokenBounds(cmd, start)
+	prefix := cmd[tokenStart:start]
+	// For --flag=rel/path, validate the value. For ambiguous attached option
+	// forms like -isystem/path, keep the slash-starting path conservative.
+	if eq := strings.IndexByte(prefix, '='); eq >= 0 {
+		return cmd[tokenStart+eq+1 : tokenEnd]
+	}
+	if strings.HasPrefix(prefix, "-") {
+		return raw
+	}
+	return cmd[tokenStart:tokenEnd]
+}
+
+func shellTokenBounds(cmd string, idx int) (int, int) {
+	start := idx
+	for start > 0 && !isShellTokenBoundary(cmd[start-1]) {
+		start--
+	}
+	end := idx
+	for end < len(cmd) && !isShellTokenBoundary(cmd[end]) {
+		end++
+	}
+	return start, end
+}
+
+// isUnixAbsolutePathMatchStart returns true when a regex match beginning with
+// "/" is actually an absolute path token, not the separator inside a relative
+// path such as "skills/foo.py".
+func isUnixAbsolutePathMatchStart(cmd string, idx int) bool {
+	if idx <= 0 {
+		return true
+	}
+
+	prev := cmd[idx-1]
+	if isShellTokenBoundary(prev) || prev == '=' || prev == ',' || prev == '(' || prev == '[' || prev == '{' {
+		return true
+	}
+
+	j := idx - 1
+	for j >= 0 && !isShellTokenBoundary(cmd[j]) {
+		j--
+	}
+	prefix := cmd[j+1 : idx]
+
+	return strings.HasPrefix(prefix, "-") && !strings.Contains(prefix, "=")
 }
 
 // isShellTokenBoundary returns true when b is a byte that separates
